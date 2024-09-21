@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: node:14
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "4000:4000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:4001
+    command: sh -c "chmod +x /app/start-frontend.sh && /app/start-frontend.sh"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+      - ./backend/static:/app/static  # Mount the static directory
+    ports:
+      - "4001:4001"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017
+      - MONGODB_DB=climbing
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

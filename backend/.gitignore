@@ -1,0 +1,7 @@
+GroundingDino
+lang-segment-anything
+.env
+*.swp
+*.swo
+*.pyc
+static/*.pth
