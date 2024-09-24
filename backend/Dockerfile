@@ -27,7 +27,7 @@ RUN pipenv install
 # Copy the rest of the application
 COPY . .
 
-ENV FLASK_APP=app.py
+ENV FLASK_APP=src/app.py
 ENV FLASK_ENV=development
 ENV FLASK_DEBUG=1
 

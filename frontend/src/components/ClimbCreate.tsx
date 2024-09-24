@@ -8,7 +8,7 @@ interface Props {
 
 const ClimbCreate: React.FC<Props> = ({ wallId, selectedHolds }) => {
   const [name, setName] = useState('');
-  const [rating, setRating] = useState<number>(0);
+  const [grade, setGrade] = useState<number>(0);
   const [sent, setSent] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
 
@@ -23,15 +23,16 @@ const ClimbCreate: React.FC<Props> = ({ wallId, selectedHolds }) => {
     try {
       await API.post(`/wall/${wallId}/climb`, {
         name,
-        rating,
-        holds: selectedHolds,
-        sent,
+        description: '',
+        grade,
+        hold_ids: selectedHolds,
+        date: new Date().toISOString(),
       });
 
       setMessage('Climb created successfully!');
       // Optionally, reset form fields or selected holds
       setName('');
-      setRating(0);
+      setGrade(0);
       setSent(false);
       // You might also clear selected holds in WallDetail if desired
     } catch (error) {
@@ -53,13 +54,17 @@ const ClimbCreate: React.FC<Props> = ({ wallId, selectedHolds }) => {
           />
         </div>
         <div>
-          <label>Rating:</label>
+        <label>Grade:</label>
           <input
             type="number"
-            value={rating}
-            onChange={(e) => setRating(Number(e.target.value))}
+            value={grade}
+            onChange={(e) => {
+              const value = Math.max(1, Math.min(20, Number(e.target.value)));
+              setGrade(value);
+            }}
             required
           />
+          <span>V{grade}</span>
         </div>
         <div>
           <p>Selected Holds: {selectedHolds.length}</p>

@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import API from '../services/api';
 import { useParams } from 'react-router-dom';
-import { Wall } from '../types';
+import { Wall, Climb } from '../types';
 import ClimbList from './ClimbList';
 import ClimbCreate from './ClimbCreate';
 
@@ -13,6 +13,7 @@ const WallDetail: React.FC = () => {
   const [selectedHolds, setSelectedHolds] = useState<string[]>([]);
   const [showAllHolds, setShowAllHolds] = useState<boolean>(false);
   const [holdImages, setHoldImages] = useState<{ [key: string]: string }>({});
+  const [climbs, setClimbs] = useState<Climb[]>([]);
 
   useEffect(() => {
     const fetchWall = async () => {
@@ -33,6 +34,21 @@ const WallDetail: React.FC = () => {
   useEffect(() => {
     if (wall) {
       generateHoldImages(wall.holds);
+    }
+  }, [wall]);
+
+  useEffect(() => {
+    if (wall) {
+      const fetchClimbs = async () => {
+        try {
+          const response = await API.get(`/wall/${wall.id}/climbs`);
+          setClimbs(response.data.climbs);
+        } catch (err) {
+          console.error('Error fetching climbs:', err);
+        }
+      };
+  
+      fetchClimbs();
     }
   }, [wall]);
 
@@ -76,13 +92,15 @@ const WallDetail: React.FC = () => {
 
     // Draw the border around the mask
     context.strokeStyle = 'black';
-    context.lineWidth = 2;
+    context.lineWidth = 4;
     context.beginPath();
     for (let row = 0; row < mask.length; row++) {
       for (let col = 0; col < mask[0].length; col++) {
         if (mask[row][col]) {
           // Check if the current pixel is on the border
           const isBorder = 
+            row === 0 || row === mask.length - 1 || 
+            col === 0 || col === mask[0].length - 1 || 
             !mask[row - 1]?.[col] || !mask[row + 1]?.[col] || 
             !mask[row]?.[col - 1] || !mask[row]?.[col + 1];
           if (isBorder) {
@@ -133,7 +151,6 @@ const WallDetail: React.FC = () => {
             position: 'absolute',
             top: 0,
             left: 0,
-            cursor: 'pointer',
           }}
           width="100%"
           height="100%"
@@ -143,8 +160,7 @@ const WallDetail: React.FC = () => {
           {wall.holds.map((hold, index) => {
             const holdId = hold.id;
             const isSelected = selectedHolds.includes(holdId);
-            const shouldDisplay = showAllHolds || isSelected;
-            if (!shouldDisplay) return null;
+            const isVisible = showAllHolds || isSelected;
 
             const [x, y, width, height] = hold.bbox;
 
@@ -156,7 +172,11 @@ const WallDetail: React.FC = () => {
                 y={y}
                 width={width}
                 height={height}
-                opacity={isSelected ? 0.8 : 0.5}
+                style={{
+                  opacity: isVisible ? (isSelected ? 0.8 : 0.5) : 0,
+                  cursor: 'pointer',
+                  pointerEvents: 'all', // Ensure the hold can be clicked even if not visible
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleHoldClick(holdId);
@@ -167,7 +187,7 @@ const WallDetail: React.FC = () => {
         </svg>
       </div>
       <h2>Climbs</h2>
-      <ClimbList climbs={wall.routes} />
+      <ClimbList climbs={climbs} />
       <ClimbCreate wallId={wall.id} selectedHolds={selectedHolds} />
       <button onClick={() => setSelectedHolds([])}>Reset Hold Selection</button>
     </div>

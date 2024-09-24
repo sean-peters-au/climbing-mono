@@ -4,4 +4,4 @@ lang-segment-anything
 *.swp
 *.swo
 *.pyc
-static/*.pth
+static/*

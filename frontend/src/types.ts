@@ -9,9 +9,10 @@ export interface Hold {
 export interface Climb {
   id: string;
   name: string;
-  rating: number;
-  holds: Hold[]; // Holds that make up the climb
-  sent: boolean;
+  description: string;
+  grade: string;
+  date: string;
+  hold_ids: string[];
 }
 
 export interface Wall {
