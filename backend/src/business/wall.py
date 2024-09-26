@@ -10,7 +10,7 @@ import utils.errors
 from werkzeug.exceptions import HTTPException
 
 from .hold import create_hold, HoldModel
-from .image import segment_holds_from_image, get_perspective_image
+from .image import get_cropped_image, segment_holds_from_image, get_perspective_image
 
 @dataclass
 class WallModel:
@@ -54,7 +54,7 @@ class RouteModel:
             description=mongo_data.get('description', ''),
             grade=mongo_data.get('grade', ''),
             date=str(mongo_data.get('date', '')),
-            holds=[],  # Will be populated in get_wall
+            holds=[str(hold_id) for hold_id in mongo_data['holds']],
         )
 
     def asdict(self):
@@ -67,13 +67,13 @@ def register_wall(name, image, wall_annotations):
         if wall['name'] == name:
             raise utils.errors.ValidationError("Wall with given name already exists.")
 
-    perspective_image = get_perspective_image(image, wall_annotations)
+    cropped_image = get_cropped_image(image, wall_annotations)
 
     # get holds from image
-    hold_models = segment_holds_from_image(perspective_image, cv_image=True)
+    hold_models = segment_holds_from_image(cropped_image, cv_image=True)
 
     # upload image the perspective image to s3
-    _, im_buf_arr = cv2.imencode(".jpg", perspective_image)
+    _, im_buf_arr = cv2.imencode(".jpg", cropped_image)
     byte_im = im_buf_arr.tobytes()
     with tempfile.NamedTemporaryFile(delete=False) as temp_image_file:
         temp_image_file.write(byte_im)
@@ -86,8 +86,8 @@ def register_wall(name, image, wall_annotations):
 
     wall = db.schema.Wall(
         name=name,
-        height=perspective_image.shape[0],
-        width=perspective_image.shape[1],
+        height=cropped_image.shape[0],
+        width=cropped_image.shape[1],
         image=uid,
         holds=holds,
         routes=[],
@@ -107,7 +107,6 @@ def add_hold_to_wall(id, x, y):
     raise NotImplementedError("Not implemented")
 
 def get_walls():
-    print('get walls')
     walls = db.schema.Wall.objects().only('name', 'height', 'width', 'image', 'routes')
     walls = [WallModel.from_mongo(wall.to_mongo()).asdict() for wall in walls]
 
@@ -208,11 +207,15 @@ def get_climbs_for_wall(wall_id):
 
     # Fetch climbs associated with the wall
     climbs = db.schema.Route.objects(wall_id=wall)
-    climbs = [RouteModel.from_mongo(climb.to_mongo()) for climb in climbs]
-    climbs = [climb.asdict() for climb in climbs]
-    print(climbs)
+    climb_models = []
+    for climb in climbs:
+        climb_data = RouteModel.from_mongo(climb.to_mongo()).asdict()
+        # Populate holds with their details
+        hold_details = [HoldModel.from_mongo(hold.to_mongo()).asdict() for hold in climb.holds]
+        climb_data['holds'] = hold_details
+        climb_models.append(climb_data)
 
-    return climbs
+    return climb_models
 
 def _apply_affine_transform_to_bbox(M, bbox):
     # Transform the four corners of the bounding box

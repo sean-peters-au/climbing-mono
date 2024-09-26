@@ -1,44 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import API from '../services/api';
+import useWalls from '../hooks/useWalls';
 import { Wall } from '../types';
+import LoadingSpinner from './LoadingSpinner';
+import ErrorMessage from './ErrorMessage';
 
 const WallList: React.FC = () => {
-  const [walls, setWalls] = useState<Wall[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchWalls = async () => {
-      try {
-        const response = await API.get('/wall');
-        setWalls(response.data.walls);
-      } catch (err) {
-        setError('Failed to fetch walls');
-        console.error('Error fetching walls:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWalls();
-  }, []);
+  const { walls, loading, error } = useWalls();
 
   if (loading) {
-    return <div>Loading walls...</div>;
+    return <LoadingSpinner message="Loading walls..." />;
   }
 
   if (error) {
-    return <div>{error}</div>;
+    return <ErrorMessage message={error} />;
   }
 
   return (
     <div>
       <h1>Wall List</h1>
-      <Link to="/walls/new">Create New Wall</Link>
       {walls.length > 0 ? (
         <ul>
-          {walls.map((wall) => (
+          {walls.map((wall: Wall) => (
             <li key={wall.id}>
               <Link to={`/walls/${wall.id}`}>{wall.name}</Link>
             </li>

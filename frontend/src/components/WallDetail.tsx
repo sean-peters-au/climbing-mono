@@ -1,122 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import API from '../services/api';
+// src/components/WallDetail.tsx
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Wall, Climb } from '../types';
+import useWall from '../hooks/useWall';
+import useClimbs from '../hooks/useClimbs';
+import { Hold } from '../types';
 import ClimbList from './ClimbList';
 import ClimbCreate from './ClimbCreate';
+import HoldOverlay from './HoldOverlay';
+import LoadingSpinner from './LoadingSpinner';
+import ErrorMessage from './ErrorMessage';
 
 const WallDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [wall, setWall] = useState<Wall | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const { wall, loading: wallLoading, error: wallError } = useWall(id!);
+  const { climbs, loading: climbsLoading, error: climbsError } = useClimbs(id!);
   const [selectedHolds, setSelectedHolds] = useState<string[]>([]);
   const [showAllHolds, setShowAllHolds] = useState<boolean>(false);
-  const [holdImages, setHoldImages] = useState<{ [key: string]: string }>({});
-  const [climbs, setClimbs] = useState<Climb[]>([]);
+  const [selectedClimbId, setSelectedClimbId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchWall = async () => {
-      try {
-        const response = await API.get(`/wall/${id}`);
-        setWall(response.data);
-      } catch (err) {
-        setError('Failed to fetch wall data.');
-        console.error('Error fetching wall:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (wallLoading || climbsLoading) {
+    return <LoadingSpinner message="Loading wall details..." />;
+  }
 
-    fetchWall();
-  }, [id]);
-
-  useEffect(() => {
-    if (wall) {
-      generateHoldImages(wall.holds);
-    }
-  }, [wall]);
-
-  useEffect(() => {
-    if (wall) {
-      const fetchClimbs = async () => {
-        try {
-          const response = await API.get(`/wall/${wall.id}/climbs`);
-          setClimbs(response.data.climbs);
-        } catch (err) {
-          console.error('Error fetching climbs:', err);
-        }
-      };
-  
-      fetchClimbs();
-    }
-  }, [wall]);
-
-  const generateHoldImages = (holds: any[]) => {
-    const images: { [key: string]: string } = {};
-    holds.forEach((hold) => {
-      const holdId = hold.id;
-      const { bbox, mask } = hold;
-      const imageDataUrl = createHoldImage(bbox, mask);
-      images[holdId] = imageDataUrl;
-    });
-    setHoldImages(images);
-  };
-
-  const createHoldImage = (bbox: number[], mask: boolean[][]): string => {
-    const [x, y, width, height] = bbox;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d');
-    if (!context) return '';
-
-    // Draw the mask onto the canvas
-    const imageData = context.createImageData(width, height);
-    for (let row = 0; row < mask.length; row++) {
-      for (let col = 0; col < mask[0].length; col++) {
-        const index = (row * width + col) * 4;
-        if (mask[row][col]) {
-          // Set pixel to semi-transparent red
-          imageData.data[index] = 255;     // R
-          imageData.data[index + 1] = 0;   // G
-          imageData.data[index + 2] = 0;   // B
-          imageData.data[index + 3] = 128; // A (0-255)
-        } else {
-          // Leave pixel transparent
-          imageData.data[index + 3] = 0;
-        }
-      }
-    }
-    context.putImageData(imageData, 0, 0);
-
-    // Draw the border around the mask
-    context.strokeStyle = 'black';
-    context.lineWidth = 4;
-    context.beginPath();
-    for (let row = 0; row < mask.length; row++) {
-      for (let col = 0; col < mask[0].length; col++) {
-        if (mask[row][col]) {
-          // Check if the current pixel is on the border
-          const isBorder = 
-            row === 0 || row === mask.length - 1 || 
-            col === 0 || col === mask[0].length - 1 || 
-            !mask[row - 1]?.[col] || !mask[row + 1]?.[col] || 
-            !mask[row]?.[col - 1] || !mask[row]?.[col + 1];
-          if (isBorder) {
-            context.moveTo(col, row);
-            context.lineTo(col + 1, row);
-            context.lineTo(col + 1, row + 1);
-            context.lineTo(col, row + 1);
-            context.lineTo(col, row);
-          }
-        }
-      }
-    }
-    context.stroke();
-
-    return canvas.toDataURL();
-  };
+  if (wallError || !wall) {
+    return <ErrorMessage message={wallError || 'Wall not found.'} />;
+  }
 
   const handleHoldClick = (holdId: string) => {
     setSelectedHolds((prevSelected) =>
@@ -126,13 +34,7 @@ const WallDetail: React.FC = () => {
     );
   };
 
-  if (loading) {
-    return <div>Loading wall details...</div>;
-  }
-
-  if (error || !wall) {
-    return <div>{error || 'Wall not found.'}</div>;
-  }
+  const selectedClimb = climbs.find((climb) => climb.id === selectedClimbId);
 
   return (
     <div>
@@ -140,54 +42,24 @@ const WallDetail: React.FC = () => {
       <button onClick={() => setShowAllHolds(!showAllHolds)}>
         {showAllHolds ? 'Hide All Holds' : 'Show All Holds'}
       </button>
-      <div style={{ position: 'relative', display: 'inline-block' }}>
-        <img
-          src={wall.image}
-          alt={wall.name}
-          style={{ maxWidth: '100%', display: 'block' }}
-        />
-        <svg
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-          }}
-          width="100%"
-          height="100%"
-          viewBox={`0 0 ${wall.width} ${wall.height}`}
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {wall.holds.map((hold, index) => {
-            const holdId = hold.id;
-            const isSelected = selectedHolds.includes(holdId);
-            const isVisible = showAllHolds || isSelected;
-
-            const [x, y, width, height] = hold.bbox;
-
-            return (
-              <image
-                key={holdId}
-                href={holdImages[holdId]}
-                x={x}
-                y={y}
-                width={width}
-                height={height}
-                style={{
-                  opacity: isVisible ? (isSelected ? 0.8 : 0.5) : 0,
-                  cursor: 'pointer',
-                  pointerEvents: 'all', // Ensure the hold can be clicked even if not visible
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleHoldClick(holdId);
-                }}
-              />
-            );
-          })}
-        </svg>
-      </div>
+      <HoldOverlay
+        wall={wall}
+        holds={wall.holds}
+        selectedHolds={selectedHolds}
+        showAllHolds={showAllHolds}
+        climbHoldIds={selectedClimb?.hold_ids || []}
+        onHoldClick={handleHoldClick}
+      />
       <h2>Climbs</h2>
-      <ClimbList climbs={climbs} />
+      {climbsError ? (
+        <ErrorMessage message={climbsError} />
+      ) : (
+        <ClimbList
+          climbs={climbs}
+          selectedClimbId={selectedClimbId}
+          onSelectClimb={setSelectedClimbId}
+        />
+      )}
       <ClimbCreate wallId={wall.id} selectedHolds={selectedHolds} />
       <button onClick={() => setSelectedHolds([])}>Reset Hold Selection</button>
     </div>

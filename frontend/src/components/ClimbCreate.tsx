@@ -1,5 +1,7 @@
+// src/components/ClimbCreate.tsx
 import React, { useState } from 'react';
 import API from '../services/api';
+import './ClimbCreate.css';
 
 interface Props {
   wallId: string;
@@ -7,10 +9,23 @@ interface Props {
 }
 
 const ClimbCreate: React.FC<Props> = ({ wallId, selectedHolds }) => {
-  const [name, setName] = useState('');
-  const [grade, setGrade] = useState<number>(0);
-  const [sent, setSent] = useState<boolean>(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    grade: '',
+    description: '',
+  });
   const [message, setMessage] = useState<string>('');
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const target = e.target as HTMLInputElement;
+    const { name, value, type, checked } = target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,19 +37,17 @@ const ClimbCreate: React.FC<Props> = ({ wallId, selectedHolds }) => {
 
     try {
       await API.post(`/wall/${wallId}/climb`, {
-        name,
-        description: '',
-        grade,
+        ...formData,
         hold_ids: selectedHolds,
         date: new Date().toISOString(),
       });
 
       setMessage('Climb created successfully!');
-      // Optionally, reset form fields or selected holds
-      setName('');
-      setGrade(0);
-      setSent(false);
-      // You might also clear selected holds in WallDetail if desired
+      setFormData({
+        name: '',
+        grade: '',
+        description: '',
+      });
     } catch (error) {
       console.error('Error creating climb:', error);
       setMessage('Failed to create climb.');
@@ -42,45 +55,40 @@ const ClimbCreate: React.FC<Props> = ({ wallId, selectedHolds }) => {
   };
 
   return (
-    <div>
+    <div className="climb-create">
       <h3>Create New Climb</h3>
       <form onSubmit={handleSubmit}>
         <div>
           <label>Climb Name:</label>
           <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
             required
           />
         </div>
         <div>
-        <label>Grade:</label>
+          <label>Grade:</label>
           <input
-            type="number"
-            value={grade}
-            onChange={(e) => {
-              const value = Math.max(1, Math.min(20, Number(e.target.value)));
-              setGrade(value);
-            }}
+            name="grade"
+            value={formData.grade}
+            onChange={handleChange}
             required
           />
-          <span>V{grade}</span>
+        </div>
+        <div>
+          <label>Description:</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <p>Selected Holds: {selectedHolds.length}</p>
           {selectedHolds.length === 0 && (
             <p style={{ color: 'red' }}>No holds selected.</p>
           )}
-        </div>
-        <div>
-          <label>
-            Sent:
-            <input
-              type="checkbox"
-              checked={sent}
-              onChange={(e) => setSent(e.target.checked)}
-            />
-          </label>
         </div>
         <button type="submit">Create Climb</button>
       </form>

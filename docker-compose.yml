@@ -19,6 +19,7 @@ services:
     volumes:
       - ./backend:/app
       - ./backend/static:/app/static  # Mount the static directory
+      - model-cache:/root/.cache/huggingface  # Add this line
     ports:
       - "4001:4001"
     environment:
@@ -27,15 +28,25 @@ services:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
       - PYTHONUNBUFFERED=1
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface  # Add this line
     depends_on:
       - mongo
 
   mongo:
     image: mongo:latest
+    user: "999:999"
     ports:
       - "27018:27017"
     volumes:
       - mongo-data:/data/db
+    command: >
+      --wiredTigerCacheSizeGB 1
+      --setParameter diagnosticDataCollectionEnabled=false
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
 volumes:
   mongo-data:
+  model-cache:  # Add this volume

@@ -1,9 +1,10 @@
+// src/types.ts
 export interface Hold {
   id: string;
-  bbox: number[]; // [x1, y1, x2, y2]
+  bbox: number[]; // [x, y, width, height]
   centroid_x: number;
   centroid_y: number;
-  mask: number[][]; // 2D array representing the hold mask
+  mask: boolean[][]; // 2D array representing the hold mask
 }
 
 export interface Climb {

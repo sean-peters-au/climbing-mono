@@ -9,9 +9,9 @@ class Config:
     SEGMENT_ANYTHING = {
         # 'checkpoint_path': './static/sam_vit_h_4b8939.pth',
         # 'model_type': 'vit_h',
-        'checkpoint_path': '../static/sam_vit_l_0b3195.pth',
+        'checkpoint_path': './static/sam_vit_l_0b3195.pth',
         'model_type': 'vit_l',
-        'min_hold_size': 10,
+        'min_hold_size': 5,
         'max_hold_size': 150000,
         'new_image_affine_match_threshold': 50,
     }

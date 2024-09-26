@@ -1,0 +1,10 @@
+/* src/components/ImageAnnotator.css */
+.image-annotator {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .image-annotator canvas {
+    border: 1px solid #ccc;
+    cursor: crosshair;
+  }

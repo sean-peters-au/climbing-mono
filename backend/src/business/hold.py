@@ -15,6 +15,9 @@ class HoldModel:
             mask=mongo_data['mask'],
         )
 
+    def asdict(self):
+        return asdict(self)
+
 def create_hold(hold_model):
     hold = db.schema.Hold(**hold_model)
     hold.save()

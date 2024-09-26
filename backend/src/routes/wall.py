@@ -14,7 +14,7 @@ def register_wall():
         name = fields.Str(required=True)
         image = fields.Str(required=True)
         # [{x: 1, y: 1}, ...]
-        wall_annotations = fields.List(fields.Dict(keys=fields.Str(), values=fields.Int()), validate=lambda x: len(x) == 4)
+        wall_annotations = fields.List(fields.Tuple((fields.Int(), fields.Int())), required=True)
 
     try:
         WallSchema().load(flask.request.get_json())
@@ -121,6 +121,7 @@ def get_climbs_for_wall(id):
     # Serialize the climbs
     climb_data = []
     for climb in climbs:
+        print(climb)
         climb_dict = {
             'id': str(climb['id']),
             'name': climb['name'],
