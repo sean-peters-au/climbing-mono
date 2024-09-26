@@ -1,14 +1,14 @@
-// src/components/WallDetail.tsx
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Typography, Button, Paper } from '@mui/material';
+import Layout from '../components/Layout';
 import useWall from '../hooks/useWall';
 import useClimbs from '../hooks/useClimbs';
-import { Hold } from '../types';
-import ClimbList from './ClimbList';
-import ClimbCreate from './ClimbCreate';
-import HoldOverlay from './HoldOverlay';
-import LoadingSpinner from './LoadingSpinner';
-import ErrorMessage from './ErrorMessage';
+import ClimbList from '../components/ClimbList';
+import ClimbCreate from '../components/ClimbCreate';
+import HoldOverlay from '../components/HoldOverlay';
+import ErrorMessage from '../components/ErrorMessage';
+import LoadingAnimation from '../components/LoadingAnimation';
 
 const WallDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +19,7 @@ const WallDetail: React.FC = () => {
   const [selectedClimbId, setSelectedClimbId] = useState<string | null>(null);
 
   if (wallLoading || climbsLoading) {
-    return <LoadingSpinner message="Loading wall details..." />;
+    return <LoadingAnimation message="Loading wall details..." />;
   }
 
   if (wallError || !wall) {
@@ -36,12 +36,16 @@ const WallDetail: React.FC = () => {
 
   const selectedClimb = climbs.find((climb) => climb.id === selectedClimbId);
 
-  return (
-    <div>
-      <h1>{wall.name}</h1>
-      <button onClick={() => setShowAllHolds(!showAllHolds)}>
+  const leftColumn = (
+    <Paper elevation={1} sx={{ p: 2, height: '100%' }}>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => setShowAllHolds(!showAllHolds)}
+        sx={{ mb: 2 }}
+      >
         {showAllHolds ? 'Hide All Holds' : 'Show All Holds'}
-      </button>
+      </Button>
       <HoldOverlay
         wall={wall}
         holds={wall.holds}
@@ -50,7 +54,17 @@ const WallDetail: React.FC = () => {
         climbHoldIds={selectedClimb?.hold_ids || []}
         onHoldClick={handleHoldClick}
       />
-      <h2>Climbs</h2>
+      <Button variant="outlined" onClick={() => setSelectedHolds([])} sx={{ mt: 2 }}>
+        Reset Hold Selection
+      </Button>
+    </Paper>
+  );
+
+  const rightColumn = (
+    <Paper elevation={1} sx={{ p: 2, height: '100%' }}>
+      <Typography variant="h4" gutterBottom>
+        Climbs
+      </Typography>
       {climbsError ? (
         <ErrorMessage message={climbsError} />
       ) : (
@@ -61,8 +75,11 @@ const WallDetail: React.FC = () => {
         />
       )}
       <ClimbCreate wallId={wall.id} selectedHolds={selectedHolds} />
-      <button onClick={() => setSelectedHolds([])}>Reset Hold Selection</button>
-    </div>
+    </Paper>
+  );
+
+  return (
+    <Layout leftColumn={leftColumn} rightColumn={rightColumn} />
   );
 };
 

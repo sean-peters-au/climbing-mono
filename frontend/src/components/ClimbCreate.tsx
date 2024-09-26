@@ -1,7 +1,13 @@
-// src/components/ClimbCreate.tsx
 import React, { useState } from 'react';
+import {
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  Box,
+  InputAdornment,
+} from '@mui/material';
 import API from '../services/api';
-import './ClimbCreate.css';
 
 interface Props {
   wallId: string;
@@ -19,11 +25,10 @@ const ClimbCreate: React.FC<Props> = ({ wallId, selectedHolds }) => {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const target = e.target as HTMLInputElement;
-    const { name, value, type, checked } = target;
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: value,
     }));
   };
 
@@ -55,45 +60,56 @@ const ClimbCreate: React.FC<Props> = ({ wallId, selectedHolds }) => {
   };
 
   return (
-    <div className="climb-create">
-      <h3>Create New Climb</h3>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Climb Name:</label>
-          <input
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label>Grade:</label>
-          <input
-            name="grade"
-            value={formData.grade}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label>Description:</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <p>Selected Holds: {selectedHolds.length}</p>
-          {selectedHolds.length === 0 && (
-            <p style={{ color: 'red' }}>No holds selected.</p>
-          )}
-        </div>
-        <button type="submit">Create Climb</button>
-      </form>
-      {message && <p>{message}</p>}
-    </div>
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
+      <Typography variant="h6" gutterBottom>
+        Create New Climb
+      </Typography>
+      <TextField
+        label="Climb Name"
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        fullWidth
+        required
+        margin="normal"
+      />
+      <TextField
+        label="Grade"
+        name="grade"
+        value={formData.grade}
+        onChange={handleChange}
+        fullWidth
+        required
+        margin="normal"
+        InputProps={{
+          startAdornment: <InputAdornment position="start">V</InputAdornment>,
+        }}
+      />
+      <TextField
+        label="Description"
+        name="description"
+        value={formData.description}
+        onChange={handleChange}
+        fullWidth
+        multiline
+        rows={4}
+        margin="normal"
+      />
+      <Typography variant="body1" gutterBottom>
+        Selected Holds: {selectedHolds.length}
+      </Typography>
+      {selectedHolds.length === 0 && (
+        <Alert severity="warning">No holds selected.</Alert>
+      )}
+      <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
+        Create Climb
+      </Button>
+      {message && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          {message}
+        </Alert>
+      )}
+    </Box>
   );
 };
 

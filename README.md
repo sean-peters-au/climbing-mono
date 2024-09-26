@@ -9,6 +9,7 @@ Not much here just yet
 
 ## Getting Started
 
+populate .env files (see .env.template files)
 git clone https://github.com/IDEA-Research/GroundingDINO.git
 git clone https://github.com/luca-medeiros/lang-segment-anything.git
 docker-compose up --build

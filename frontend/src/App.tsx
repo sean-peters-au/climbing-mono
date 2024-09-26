@@ -1,20 +1,18 @@
-// src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
-import WallList from './components/WallList';
+import HomePage from './components/HomePage';
 import WallCreate from './components/WallCreate';
 import WallDetail from './components/WallDetail';
+import WallList from './components/WallList';
 
 const App: React.FC = () => (
   <Router>
-    <Layout>
-      <Routes>
-        <Route path="/" element={<WallList />} />
-        <Route path="/walls/new" element={<WallCreate />} />
-        <Route path="/walls/:id" element={<WallDetail />} />
-      </Routes>
-    </Layout>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/walls/" element={<WallList />} />
+      <Route path="/walls/new" element={<WallCreate />} />
+      <Route path="/walls/:id" element={<WallDetail />} />
+    </Routes>
   </Router>
 );
 

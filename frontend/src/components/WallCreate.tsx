@@ -4,6 +4,7 @@ import API from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import ImageAnnotator from './ImageAnnotator';
 import './WallCreate.css';
+import LoadingAnimation from './LoadingAnimation';
 
 type Point = [number, number];
 
@@ -11,7 +12,12 @@ const WallCreate: React.FC = () => {
   const [name, setName] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [annotations, setAnnotations] = useState<Point[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  if (isLoading) {
+    return <LoadingAnimation />
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -27,18 +33,26 @@ const WallCreate: React.FC = () => {
       return;
     }
 
+    setIsLoading(true);
+
     const reader = new FileReader();
     reader.readAsDataURL(imageFile);
     reader.onloadend = async () => {
       const base64Image = reader.result?.toString().split(',')[1];
 
-      await API.post('/wall', {
-        name,
+      try {
+        await API.post('/wall', {
+          name,
         image: base64Image,
-        wall_annotations: annotations,
-      });
+          wall_annotations: annotations,
+        });
 
-      navigate('/');
+        navigate('/');
+      } catch (error) {
+        console.error('Error creating wall:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
   };
 

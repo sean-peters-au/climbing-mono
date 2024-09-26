@@ -28,6 +28,7 @@ services:
       - mongo
 
   mongo:
+    container_name: climbing-mongo
     image: mongo:latest
     user: "999:999"
     ports:

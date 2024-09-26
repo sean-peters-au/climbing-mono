@@ -1,36 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import useWalls from '../hooks/useWalls';
+import { Grid, Card, CardContent, Typography, CardActionArea } from '@mui/material';
+import API from '../services/api';
 import { Wall } from '../types';
-import LoadingSpinner from './LoadingSpinner';
-import ErrorMessage from './ErrorMessage';
 
 const WallList: React.FC = () => {
-  const { walls, loading, error } = useWalls();
+  const [walls, setWalls] = useState<Wall[]>([]);
 
-  if (loading) {
-    return <LoadingSpinner message="Loading walls..." />;
-  }
-
-  if (error) {
-    return <ErrorMessage message={error} />;
-  }
+  useEffect(() => {
+    const fetchWalls = async () => {
+      const response = await API.get('/wall');
+      setWalls(response.data['walls']);
+    };
+    fetchWalls();
+  }, []);
 
   return (
-    <div>
-      <h1>Wall List</h1>
-      {walls.length > 0 ? (
-        <ul>
-          {walls.map((wall: Wall) => (
-            <li key={wall.id}>
-              <Link to={`/walls/${wall.id}`}>{wall.name}</Link>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No walls found. Please create a new wall.</p>
-      )}
-    </div>
+    <Grid container spacing={4}>
+      {walls.map((wall) => (
+        <Grid item xs={12} sm={6} md={4} key={wall.id}>
+          <Card>
+            <CardActionArea component={Link} to={`/walls/${wall.id}`}>
+              <CardContent>
+                <Typography variant="h4" component="div">
+                  {wall.name}
+                </Typography>
+                {/* Include a preview image or description if available */}
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
   );
 };
 
