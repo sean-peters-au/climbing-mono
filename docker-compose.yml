@@ -8,8 +8,8 @@ services:
       - ./frontend:/app
     ports:
       - "4000:4000"
-    environment:
-      - REACT_APP_API_URL=http://localhost:4001
+    env_file:
+      - ./frontend/.env
     command: sh -c "chmod +x /app/start-frontend.sh && /app/start-frontend.sh"
 
   backend:
@@ -22,13 +22,8 @@ services:
       - model-cache:/root/.cache/huggingface  # Add this line
     ports:
       - "4001:4001"
-    environment:
-      - MONGODB_URI=mongodb://mongo:27017
-      - MONGODB_DB=climbing
-      - FLASK_ENV=development
-      - FLASK_DEBUG=1
-      - PYTHONUNBUFFERED=1
-      - TRANSFORMERS_CACHE=/root/.cache/huggingface  # Add this line
+    env_file:
+      - ./backend/.env
     depends_on:
       - mongo
 

@@ -2,22 +2,20 @@ import os
 
 class Config:
     MONGODB_SETTINGS = {
-        'host': 'mongodb://mongo:27017',
-        'db': os.environ.get('MONGODB_DB', 'climbing'),
+        'host': os.environ.get('MONGODB_HOST'),
+        'db': os.environ.get('MONGODB_DB'),
     }
 
     SEGMENT_ANYTHING = {
-        # 'checkpoint_path': './static/sam_vit_h_4b8939.pth',
-        # 'model_type': 'vit_h',
-        'checkpoint_path': './static/sam_vit_l_0b3195.pth',
-        'model_type': 'vit_l',
-        'min_hold_size': 5,
-        'max_hold_size': 150000,
-        'new_image_affine_match_threshold': 50,
+        'checkpoint_path': os.environ.get('SEGMENT_ANYTHING_CHECKPOINT_PATH'),
+        'model_type': os.environ.get('SEGMENT_ANYTHING_MODEL_TYPE'),
+        'min_hold_size': os.environ.get('SEGMENT_ANYTHING_MIN_HOLD_SIZE'),
+        'max_hold_size': os.environ.get('SEGMENT_ANYTHING_MAX_HOLD_SIZE'),
+        'new_image_affine_match_threshold': os.environ.get('SEGMENT_ANYTHING_NEW_IMAGE_AFFINE_MATCH_THRESHOLD'),
     }
 
     S3 = {
-        'AWS_ACCESS_KEY_ID': 'AKIA3FLD3PDHZC7FYYOF',
-        'AWS_SECRET_ACCESS_KEY': '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',
-        'BUCKET': 'woody-climbing-dev',
+        'AWS_ACCESS_KEY_ID': os.environ.get('S3_AWS_ACCESS_KEY_ID'),
+        'AWS_SECRET_ACCESS_KEY': os.environ.get('S3_AWS_SECRET_ACCESS_KEY'),
+        'BUCKET': os.environ.get('S3_BUCKET'),
     }
