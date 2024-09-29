@@ -11,6 +11,8 @@ services:
     env_file:
       - ./frontend/.env
     command: sh -c "chmod +x /app/start-frontend.sh && /app/start-frontend.sh"
+    depends_on:
+      - backend
 
   backend:
     build:
@@ -26,6 +28,18 @@ services:
       - ./backend/.env
     depends_on:
       - mongo
+      - image-processing-service
+
+  image-processing-service:
+    build:
+      context: ./image-processing-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./image-processing-service/src:/app/src
+    ports:
+      - "4002:4002"
+    env_file:
+      - ./image-processing-service/.env
 
   mongo:
     container_name: climbing-mongo

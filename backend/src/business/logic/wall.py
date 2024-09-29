@@ -1,64 +1,13 @@
-from dataclasses import dataclass, asdict
-import datetime
-
 import tempfile
 import flask
 import cv2
 import numpy as np
+
+import business.models.holds
+import business.models.routes
+import business.models.walls
 import db.schema
 import utils.errors
-from werkzeug.exceptions import HTTPException
-
-from .hold import create_hold, HoldModel
-from .image import get_cropped_image, segment_holds_from_image, get_perspective_image
-
-@dataclass
-class WallModel:
-    id: str
-    name: str
-    height: int
-    width: int
-    image: str
-    routes: list
-    holds: list
-
-    @classmethod
-    def from_mongo(cls, mongo_data):
-        return cls(
-            id=str(mongo_data['_id']),
-            name=mongo_data['name'],
-            height=mongo_data['height'],
-            width=mongo_data['width'],
-            image=mongo_data['image'],
-            routes=[str(route_id) for route_id in mongo_data['routes']],
-            holds=[str(hold_id) for hold_id in mongo_data['holds']],
-        )
-
-    def asdict(self):
-        return asdict(self)
-
-@dataclass
-class RouteModel:
-    id: str
-    name: str
-    description: str
-    grade: str
-    date: str
-    holds: list  # List of hold IDs
-
-    @classmethod
-    def from_mongo(cls, mongo_data):
-        return cls(
-            id=str(mongo_data['_id']),
-            name=mongo_data.get('name', ''),
-            description=mongo_data.get('description', ''),
-            grade=mongo_data.get('grade', ''),
-            date=str(mongo_data.get('date', '')),
-            holds=[str(hold_id) for hold_id in mongo_data['holds']],
-        )
-
-    def asdict(self):
-        return asdict(self)
 
 def register_wall(name, image, wall_annotations):
     # first validate that the name is unique
@@ -67,13 +16,18 @@ def register_wall(name, image, wall_annotations):
         if wall['name'] == name:
             raise utils.errors.ValidationError("Wall with given name already exists.")
 
-    cropped_image = get_cropped_image(image, wall_annotations)
+    # transform the image
+    transformed_image = flask.current_app.extensions['image_processing'].transform_board(
+        image, board=wall_annotations, kickboard=True, mask=True, flatten=True
+    )
 
-    # get holds from image
-    hold_models = segment_holds_from_image(cropped_image, cv_image=True)
+    # identify the holds
+    hold_models = flask.current_app.extensions['image_processing'].auto_segment(
+        transformed_image, x=0, y=0,
+    )
 
     # upload image the perspective image to s3
-    _, im_buf_arr = cv2.imencode(".jpg", cropped_image)
+    _, im_buf_arr = cv2.imencode(".jpg", transformed_image)
     byte_im = im_buf_arr.tobytes()
     with tempfile.NamedTemporaryFile(delete=False) as temp_image_file:
         temp_image_file.write(byte_im)
@@ -82,12 +36,12 @@ def register_wall(name, image, wall_annotations):
         uid = flask.current_app.extensions['s3'].upload_file(temp_image_file)
 
     # create holds
-    holds = [create_hold(hold_model) for hold_model in hold_models]
+    holds = [business.models.holds.create_hold(hold_model) for hold_model in hold_models]
 
     wall = db.schema.Wall(
         name=name,
-        height=cropped_image.shape[0],
-        width=cropped_image.shape[1],
+        height=transformed_image.shape[0],
+        width=transformed_image.shape[1],
         image=uid,
         holds=holds,
         routes=[],
@@ -95,20 +49,35 @@ def register_wall(name, image, wall_annotations):
 
     with flask.current_app.app_context():
         wall.save()
-    wall_id = wall.id
 
-    return wall_id
+    return wall.id
 
 def add_hold_to_wall(id, x, y):
     wall_doc = db.schema.Wall.objects(id=id).first()
     if not wall_doc:
         raise ValueError("Wall with given ID does not exist.")
 
-    raise NotImplementedError("Not implemented")
+    image_url = flask.current_app.extensions['s3'].get_file_url(str(wall_doc.image))
+
+    # get the hold from the image processing service
+    segment = flask.current_app.extensions['image_processing'].segment_hold(
+        image=image_url,
+        x=x,
+        y=y,
+    )
+
+    # create the hold
+    hold = business.models.holds.create_hold(segment)
+
+    # add the hold to the wall
+    wall_doc.holds.append(hold)
+    wall_doc.save()
+
+    return hold
 
 def get_walls():
     walls = db.schema.Wall.objects().only('name', 'height', 'width', 'image', 'routes')
-    walls = [WallModel.from_mongo(wall.to_mongo()).asdict() for wall in walls]
+    walls = [business.models.walls.WallModel.from_mongo(wall.to_mongo()).asdict() for wall in walls]
 
     return walls
 
@@ -118,10 +87,10 @@ def get_wall(id):
         raise ValueError("Wall with given ID does not exist.")
     
     # manually dereferencing because mongoengine won't apparently
-    holds_data = [HoldModel.from_mongo(hold.to_mongo().to_dict()) for hold in wall_model.holds]
+    holds_data = [business.models.holds.HoldModel.from_mongo(hold.to_mongo().to_dict()) for hold in wall_model.holds]
     wall_model.holds = []
     
-    wall_data = WallModel.from_mongo(wall_model.to_mongo()).asdict()
+    wall_data = business.models.walls.WallModel.from_mongo(wall_model.to_mongo()).asdict()
     wall_data['holds'] = holds_data
     wall_data['image'] = flask.current_app.extensions['s3'].get_file_url(wall_data['image'])
 
@@ -138,17 +107,25 @@ def upload_new_image(id, new_wall_image):
     M = _get_affine_transform(old_wall_image, new_wall_image)
 
     # Segment the holds on the new wall image
-    new_image, new_mask_image, new_holds = _segment_holds_from_image(new_wall_image)
+    new_holds = flask.current_app.extensions['image_processing']._segment_holds_from_image(
+        new_wall_image
+    )
 
     # Create a mapping of old holds to new holds based on proximity and matching threshold
     old_holds_mapped = {}
     for old_hold in wall.holds:
         old_hold_transformed_centroid = _apply_affine_transform_to_point(M, (old_hold.centroid_x, old_hold.centroid_y))
         # Calculate distances from the transformed centroid of the old hold to all new holds
-        distances = [(hold, np.linalg.norm((hold.centroid_x - old_hold_transformed_centroid[0], hold.centroid_y - old_hold_transformed_centroid[1]))) for hold in new_holds]
+        distances = [
+            (hold, np.linalg.norm(
+                (hold.centroid_x - old_hold_transformed_centroid[0],
+                 hold.centroid_y - old_hold_transformed_centroid[1])
+            ))
+            for hold in new_holds
+        ]
         # Sort the distances and get the closest hold that is within the matching threshold
         closest_new_hold, closest_distance = min(distances, key=lambda x: x[1])
-        if closest_distance < flask.current_app.config['SEGMENT_ANYTHING']['new_image_affine_match_threshold']:
+        if closest_distance < 5:
             # Ensure that each new hold is only mapped to one old hold
             if closest_new_hold not in old_holds_mapped.values():
                 old_holds_mapped[old_hold] = closest_new_hold
@@ -170,7 +147,7 @@ def upload_new_image(id, new_wall_image):
     for hold in added_holds:
         wall.holds.append(hold)
 
-    wall.image = new_image
+    wall.image = new_wall_image
 
     # Save the updated wall
     wall.save()
@@ -209,9 +186,9 @@ def get_climbs_for_wall(wall_id):
     climbs = db.schema.Route.objects(wall_id=wall)
     climb_models = []
     for climb in climbs:
-        climb_data = RouteModel.from_mongo(climb.to_mongo()).asdict()
+        climb_data = business.models.routes.RouteModel.from_mongo(climb.to_mongo()).asdict()
         # Populate holds with their details
-        hold_details = [HoldModel.from_mongo(hold.to_mongo()).asdict() for hold in climb.holds]
+        hold_details = [business.models.holds.HoldModel.from_mongo(hold.to_mongo()).asdict() for hold in climb.holds]
         climb_data['holds'] = hold_details
         climb_models.append(climb_data)
 
@@ -267,4 +244,3 @@ def _get_affine_transform(old_wall_image, new_wall_image):
     # Find the affine transform
     M, mask = cv2.estimateAffinePartial2D(points_old, points_new)
     return M
-

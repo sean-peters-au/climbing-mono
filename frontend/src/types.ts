@@ -1,4 +1,9 @@
 // src/types.ts
+export interface Point {
+  x: number;
+  y: number;
+}
+
 export interface Hold {
   id: string;
   bbox: number[]; // [x, y, width, height]

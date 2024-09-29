@@ -1,6 +1,5 @@
-// src/components/HoldOverlay.tsx
 import React, { useEffect, useState } from 'react';
-import { Wall, Hold } from '../types';
+import { Wall, Hold, Point } from '../types';
 import { generateHoldImages } from '../utils/holdUtils';
 
 interface HoldOverlayProps {
@@ -10,6 +9,8 @@ interface HoldOverlayProps {
   showAllHolds: boolean;
   climbHoldIds: string[];
   onHoldClick: (holdId: string) => void;
+  onMissingHoldClick?: (coords: Point) => void;
+  missingHoldMode?: boolean;
 }
 
 const HoldOverlay: React.FC<HoldOverlayProps> = ({
@@ -19,6 +20,8 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
   showAllHolds,
   climbHoldIds,
   onHoldClick,
+  onMissingHoldClick,
+  missingHoldMode = false,
 }) => {
   const [holdImages, setHoldImages] = useState<{ [key: string]: string }>({});
 
@@ -27,8 +30,24 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
     setHoldImages(images);
   }, [holds]);
 
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (missingHoldMode && onMissingHoldClick) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * wall.width;
+      const y = ((event.clientY - rect.top) / rect.height) * wall.height;
+      onMissingHoldClick({ x, y });
+    }
+  };
+
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
+    <div
+      style={{
+        position: 'relative',
+        display: 'inline-block',
+        cursor: missingHoldMode ? 'crosshair' : 'default',
+      }}
+      onClick={handleOverlayClick}
+    >
       <img
         src={wall.image}
         alt={wall.name}
@@ -62,12 +81,14 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
               height={height}
               style={{
                 opacity: isVisible ? (isSelected || isClimbHold ? 0.8 : 0.5) : 0,
-                cursor: 'pointer',
-                pointerEvents: 'all',
+                cursor: missingHoldMode ? 'not-allowed' : 'pointer',
+                pointerEvents: missingHoldMode ? 'none' : 'all',
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                onHoldClick(holdId);
+                if (!missingHoldMode) {
+                  onHoldClick(holdId);
+                }
               }}
             />
           );

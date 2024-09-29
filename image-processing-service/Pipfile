@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+numpy = "*"
+opencv-python = "*"
+torch = "*"
+torchvision = "*"
+flask-cors = "*"
+marshmallow = "*"
+
+[dev-packages]
+setuptools = "*"
+wheel = "*"
+
+[requires]
+python_version = "3.9"

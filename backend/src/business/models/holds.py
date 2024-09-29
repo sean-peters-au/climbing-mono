@@ -1,7 +1,10 @@
-from dataclasses import dataclass, asdict
+import collections
+import dataclasses
 import db.schema
 
-@dataclass
+collections.namedtuple('Segment', ['bbox', 'mask'])
+
+@dataclasses.dataclass
 class HoldModel:
     id: str
     bbox: list
@@ -16,10 +19,10 @@ class HoldModel:
         )
 
     def asdict(self):
-        return asdict(self)
+        return dataclasses.asdict(self)
 
-def create_hold(hold_model):
-    hold = db.schema.Hold(**hold_model)
+def create_hold(segment):
+    hold = db.schema.Hold(**segment)
     hold.save()
     return hold
 

@@ -7,8 +7,9 @@ import {
   GridFilterModel,
   GridToolbar,
 } from '@mui/x-data-grid';
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, Button } from '@mui/material';
 import { Climb } from '../types';
+import { useTheme } from '@mui/material/styles';
 
 interface ClimbListProps {
   climbs: Climb[];
@@ -21,12 +22,12 @@ const ClimbList: React.FC<ClimbListProps> = ({
   selectedClimbId,
   onSelectClimb,
 }) => {
+  const theme = useTheme();
   const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
-    pageSize: 10,
+    pageSize: 5,
     page: 0,
   });
 
-  // Add this new state for filtering
   const [filterModel, setFilterModel] = React.useState<GridFilterModel>({
     items: [],
   });
@@ -36,31 +37,39 @@ const ClimbList: React.FC<ClimbListProps> = ({
   }
 
   const columns: GridColDef[] = [
-    { field: 'name', headerName: 'Name', flex: 1, filterable: true },
-    { field: 'description', headerName: 'Description', flex: 2, filterable: true },
+    { field: 'name', headerName: 'Name', flex: 1 },
+    { field: 'description', headerName: 'Description', flex: 2 },
     {
       field: 'grade',
       headerName: 'Grade',
-      type: 'number',
       width: 120,
-      filterable: true,
-      valueGetter: (params) => {
-        return `V${params}`;
-      },
+      valueGetter: (params) => `V${params}`,
     },
     {
       field: 'date',
       headerName: 'Date',
-      type: 'date',
       width: 120,
-      filterable: true,
       valueGetter: (params) =>
-        params ? new Date(params) : new Date(),
+        params ? new Date(params).toLocaleDateString() : '',
     },
   ];
 
+  const handleClearSelection = () => {
+    onSelectClimb(null);
+  };
+
   return (
     <Box sx={{ width: '100%', mt: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h6">Climbs</Typography>
+        <Button 
+          variant="outlined" 
+          onClick={handleClearSelection}
+          disabled={!selectedClimbId}
+        >
+          Clear Selection
+        </Button>
+      </Box>
       <DataGrid
         rows={climbs}
         columns={columns}
@@ -68,9 +77,6 @@ const ClimbList: React.FC<ClimbListProps> = ({
         paginationModel={paginationModel}
         onPaginationModelChange={(model) => setPaginationModel(model)}
         pageSizeOptions={[5, 10, 20]}
-        disableRowSelectionOnClick
-        onRowClick={(params: GridRowParams) => onSelectClimb(params.row.id)}
-        rowSelectionModel={selectedClimbId ? [selectedClimbId] : []}
         filterModel={filterModel}
         onFilterModelChange={(model) => setFilterModel(model)}
         slots={{ toolbar: GridToolbar }}
@@ -79,6 +85,14 @@ const ClimbList: React.FC<ClimbListProps> = ({
             showQuickFilter: true,
           },
         }}
+        onRowClick={(params: GridRowParams) => {
+          if (params.id === selectedClimbId) {
+            onSelectClimb(null);  // Deselect if clicking the already selected climb
+          } else {
+            onSelectClimb(params.id as string);
+          }
+        }}
+        rowSelectionModel={selectedClimbId ? [selectedClimbId] : []}
       />
     </Box>
   );
