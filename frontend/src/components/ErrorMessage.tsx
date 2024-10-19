@@ -1,6 +1,5 @@
 // src/components/ErrorMessage.tsx
 import React from 'react';
-import './ErrorMessage.css';
 
 interface ErrorMessageProps {
   message: string;

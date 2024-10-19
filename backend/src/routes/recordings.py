@@ -28,10 +28,10 @@ def create_recording():
     except ValueError as e:
         return flask.jsonify({'error': str(e)}), 400
 
-@recordings_bp.route('/recordings/<recording_id>/forces', methods=['GET'])
-def get_recording_forces(recording_id):
+@recordings_bp.route('/recordings/<recording_id>', methods=['GET'])
+def get_recording(recording_id):
     try:
-        recording_model = business.logic.recordings.get_recording_forces(recording_id)
+        recording_model = business.logic.recordings.get_recording(recording_id)
         return flask.jsonify(recording_model.asdict()), 200
     except ValueError as e:
         return flask.jsonify({'error': str(e)}), 404

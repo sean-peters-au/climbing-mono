@@ -1,4 +1,6 @@
 import dataclasses
+import business.models.routes
+import business.models.holds
 
 @dataclasses.dataclass
 class WallModel:
@@ -7,20 +9,28 @@ class WallModel:
     height: int
     width: int
     image: str
-    routes: list
-    holds: list
+    routes: list[business.models.routes.RouteModel]
+    holds: list[business.models.holds.HoldModel]
 
     @classmethod
-    def from_mongo(cls, mongo_data):
+    def from_mongo(cls, mongo_wall):
         return cls(
-            id=str(mongo_data['_id']),
-            name=mongo_data['name'],
-            height=mongo_data['height'],
-            width=mongo_data['width'],
-            image=mongo_data['image'],
-            routes=[str(route_id) for route_id in mongo_data['routes']],
-            holds=[str(hold_id) for hold_id in mongo_data['holds']],
+            id=str(mongo_wall.id),
+            name=mongo_wall.name,
+            height=mongo_wall.height,
+            width=mongo_wall.width,
+            image=str(mongo_wall.image),
+            routes=[business.models.routes.RouteModel.from_mongo(route) for route in mongo_wall.routes],
+            holds=[business.models.holds.HoldModel.from_mongo(hold) for hold in mongo_wall.holds],
         )
 
     def asdict(self):
-        return dataclasses.asdict(self)
+        return {
+            'id': self.id,
+            'name': self.name,
+            'height': self.height,
+            'width': self.width,
+            'image': self.image,
+            'routes': [route.asdict() for route in self.routes],
+            'holds': [hold.asdict() for hold in self.holds],
+        }

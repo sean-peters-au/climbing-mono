@@ -1,5 +1,7 @@
 import dataclasses
 
+import business.models.holds
+
 @dataclasses.dataclass
 class RouteModel:
     id: str
@@ -7,18 +9,25 @@ class RouteModel:
     description: str
     grade: str
     date: str
-    holds: list  # List of hold IDs
+    holds: list[business.models.holds.HoldModel]
 
     @classmethod
-    def from_mongo(cls, mongo_data):
+    def from_mongo(cls, mongo_route):
         return cls(
-            id=str(mongo_data['_id']),
-            name=mongo_data.get('name', ''),
-            description=mongo_data.get('description', ''),
-            grade=mongo_data.get('grade', ''),
-            date=str(mongo_data.get('date', '')),
-            holds=[str(hold_id) for hold_id in mongo_data['holds']],
+            id=str(mongo_route.id),
+            name=mongo_route.name,
+            description=mongo_route.description,
+            grade=mongo_route.grade,
+            date=str(mongo_route.date),
+            holds=[business.models.holds.HoldModel.from_mongo(hold) for hold in mongo_route.holds],
         )
 
     def asdict(self):
-        return dataclasses.asdict(self)
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'grade': self.grade,
+            'date': self.date,
+            'holds': [hold.asdict() for hold in self.holds],
+        }

@@ -1,5 +1,6 @@
 import concurrent.futures
 import datetime
+import json
 
 import flask
 import mongoengine.errors
@@ -7,41 +8,65 @@ import mongoengine.errors
 import business.models.recordings
 import db.schema
 
-def stop_recording(recording_id):
-    if not recording_id:
-        raise ValueError('recording_id is required')
+def create_recording(start_time: datetime.datetime, end_time: datetime.datetime, route_id: str):
+    route = db.schema.Route.objects.get(id=route_id)
 
-    try:
-        recording = db.schema.Recording.objects.get(id=recording_id)
-    except mongoengine.errors.DoesNotExist:
-        raise ValueError('Recording not found')
+    # sensor_data = _get_sensor_data(start_time, end_time, route)
+    sensor_data = _get_simulated_sensor_data(start_time, end_time, route)
 
-    recording.end_time = datetime.datetime.utcnow()
+    sensor_readings = [
+        db.schema.SensorReading(
+            x=force_data[hold_id]['x'],
+            y=force_data[hold_id]['y'],
+        )
+        for hold_id, force_data in sensor_data.items()
+    ]
 
-    sensor_data = []
-    sensors = db.schema.Sensor.objects(hold__in=recording.climb.holds)
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        sensor_data.extend(executor.map(
-            lambda sensor: flask.current_app.extensions['sensors'].get_sensor_force(sensor, recording),
-            sensors
-        ))
-
-    recording.sensor_data = sensor_data
+    recording = db.schema.Recording(
+        route=route,
+        start_time=start_time,
+        end_time=end_time,
+        sensor_readings=sensor_readings,
+    )
     recording.save()
 
-    # Convert to RecordingModel
-    recording_model = business.models.recordings.RecordingModel.from_mongo(recording.to_mongo())
+    return business.models.recordings.RecordingModel.from_mongo(recording)
 
-    return recording_model
-
-def get_recording_forces(recording_id):
+def get_recording(recording_id):
     try:
         recording = db.schema.Recording.objects.get(id=recording_id)
     except mongoengine.errors.DoesNotExist:
         raise ValueError('Recording not found')
 
-    # Convert to RecordingModel
-    recording_model = business.models.recordings.RecordingModel.from_mongo(recording.to_mongo())
+    return business.models.recordings.RecordingModel.from_mongo(recording)
 
-    return recording_model
+def _get_sensor_data(start_time: datetime.datetime, end_time: datetime.datetime, route: db.schema.Route):
+    sensors = db.schema.Sensor.objects(hold__in=route.holds)
+
+    sensor_data = {
+        sensor.hold.id: [
+            flask.current_app.extensions['sensors'].get_sensor_force(
+                sensor, start_time, end_time
+            )
+        ]
+        for sensor in sensors
+    }
+
+    return sensor_data
+
+def _get_simulated_sensor_data(start_time: datetime.datetime, end_time: datetime.datetime, route: db.schema.Route):
+    sensors = db.schema.Sensor.objects(hold__in=route.holds)
+
+    # read simulated sensors from file in
+    # ./static/hold-vector-data/simulated-hold-{n}.json (there are only 5 simulated holds)
+    simulated_sensors = [
+        json.load(open(f'./static/hold-vector-data/simulated-hold-{n}.json'))
+        for n in range(0, 5)
+    ]
+
+    sensor_data = {
+        sensor.hold.id: simulated_sensor['force_data']
+        for sensor, simulated_sensor in zip(sensors, simulated_sensors)
+    }
+
+    return sensor_data

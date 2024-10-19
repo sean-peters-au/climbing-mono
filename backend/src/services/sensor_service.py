@@ -11,7 +11,7 @@ class Vector:
 
 class SensorService(backend.src.services.service.Service):
     @abc.abstractmethod
-    def get_sensor_force(self, recording):
+    def get_sensor_force(self, sensor, start_time, end_time):
         pass
 
 class VectorSensorService(SensorService):
@@ -22,13 +22,13 @@ class VectorSensorService(SensorService):
     def init_app(self, app):
         app.extensions['sensors'] = self
 
-    def get_sensor_force(self, sensor, recording):
+    def get_sensor_force(self, sensor, start_time, end_time):
         try:
             sensor_response = requests.get(
                 f'http://{sensor.ip_address}/get_force_data',
                 params={
-                    'start_time': recording.start_time.isoformat(),
-                    'end_time': recording.end_time.isoformat()
+                    'start_time': start_time.isoformat(),
+                    'end_time': end_time.isoformat()
                 },
                 timeout=5
             )

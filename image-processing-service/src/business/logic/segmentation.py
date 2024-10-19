@@ -1,76 +1,84 @@
-import collections
+import io
 
 import flask
+import cv2
 import lang_sam
 import numpy as np
 import segment_anything
+import PIL
 
 import business.logic.utils as utils
+import utils.logging
 
-Segment = collections.namedtuple('Segment', ['mask', 'bbox'])
+import dataclasses
 
-def segment_holds_from_image(image, cv_image=False):
+@dataclasses.dataclass
+class Segment:
+    mask: list
+    bbox: list
+
+    def asdict(self):
+        return dataclasses.asdict(self)
+
+def segment_holds_from_image(image_bytes):
     """
     Segment holds from an image.
 
     Args:
-        image (PIL.Image.Image): The image to segment.
-        cv_image (bool): Whether the image is a CV image.
+        image (bytes): The image to segment.
 
     Returns:
         list: A list of holds.
     """
-    if not cv_image:
-        cv_image = utils.pil_to_cv(image)
-    else:
-        cv_image = image
+    print(f'image_bytes')
+    image = PIL.Image.open(io.BytesIO(image_bytes))
 
-    # Convert the CV image to a PIL image
-    image_pil = utils.cv_to_pil(cv_image)
+    if image.mode == 'RGBA':
+        image = image.convert('RGB')
 
     model_name = flask.current_app.config['SEGMENT_ANYTHING']['model_type']
     checkpoint_path = flask.current_app.config['SEGMENT_ANYTHING']['checkpoint_path']
 
     model = lang_sam.LangSAM(model_name, checkpoint_path)
-    
+
     text_prompt = "object"
-    masks, _, _, _ = model.predict(image_pil, text_prompt, 0.03, 0.03)
+    masks, _, _, _ = model.predict(image, text_prompt, 0.05, 0.05)
 
     # Assuming masks is a tensor, convert it to a numpy array
     masks = masks.cpu().numpy()
 
+    min_hold_size_percent = flask.current_app.config['SEGMENT_ANYTHING']['min_hold_size']
+    max_hold_size_percent = flask.current_app.config['SEGMENT_ANYTHING']['max_hold_size']
+
     # Filter out masks that are too big or too small to be climbing holds
+    # The is basically guessed by configured percentages
+    total_pixels = image.size[0] * image.size[1]
     filtered_masks = [
         mask for mask in masks
-        if flask.current_app.config['SEGMENT_ANYTHING']['min_hold_size'] < mask.sum() < flask.current_app.config['SEGMENT_ANYTHING']['max_hold_size']
+        if min_hold_size_percent < (mask.sum() / total_pixels) < max_hold_size_percent
     ]
 
     # Clip masks to their bounding box
-    holds = []
-    for mask in filtered_masks:
-        y_indices, x_indices = mask.nonzero()
-        x_min, x_max = x_indices.min(), x_indices.max()
-        y_min, y_max = y_indices.min(), y_indices.max()
-        bbox = [x_min, y_min, x_max - x_min, y_max - y_min]
-        segmentation = mask[y_min:y_max+1, x_min:x_max+1]
-        holds.append(Segment(mask=segmentation.tolist(), bbox=bbox))
+    segments = [
+        _mask_to_segment(mask)
+        for mask in filtered_masks
+    ]
 
-    return holds
+    return segments
 
-def segment_hold_from_image(image, x, y, cv_image=False):
+def segment_hold_from_image(image_bytes, x, y):
     """
     Segment a hold from an image.
 
     Args:
-        image (PIL.Image.Image): The image to segment.
+        image (bytes): The image to segment.
         cv_image (bool): Whether the image is a CV image.
         x (int): The x coordinate of the hold to segment.
         y (int): The y coordinate of the hold to segment.
     """
-    if not cv_image:
-        cv_image = utils.pil_to_cv(image)
-    else:
-        cv_image = image
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    utils.logging.logger().info(f'image shape: {image.shape}')
 
     model_name = flask.current_app.config['SEGMENT_ANYTHING']['model_type']
     checkpoint_path = flask.current_app.config['SEGMENT_ANYTHING']['checkpoint_path']
@@ -93,12 +101,31 @@ def segment_hold_from_image(image, x, y, cv_image=False):
         multimask_output=False
     )
 
-    mask = masks[0]
-    
-    # Get the bounding box of the hold
-    y_indices, x_indices = mask.nonzero()
-    x_min, x_max = x_indices.min(), x_indices.max()
-    y_min, y_max = y_indices.min(), y_indices.max()
-    bbox = [x_min, y_min, x_max - x_min, y_max - y_min]
+    # Filter out masks that are too big or too small to be climbing holds
+    utils.logging.logger().info(f'masks: {masks}')
+    filtered_masks = [
+        mask for mask in masks
+        if flask.current_app.config['SEGMENT_ANYTHING']['min_hold_size'] < mask.sum() < flask.current_app.config['SEGMENT_ANYTHING']['max_hold_size']
+    ]
 
-    return Segment(mask=mask.tolist(), bbox=bbox)
+    mask = filtered_masks[0]
+    utils.logging.logger().info(f'mask shape: {mask.shape}')
+    
+    return _mask_to_segment(mask)
+
+def _mask_to_segment(mask: np.ndarray) -> Segment:
+    """
+    Convert a mask to a segment.
+    """
+    mask = mask.astype(int)
+ 
+    y_indices, x_indices = mask.nonzero()
+    x_min, x_max = int(x_indices.min()), int(x_indices.max())
+    y_min, y_max = int(y_indices.min()), int(y_indices.max())
+
+    segment_bbox = [x_min, y_min, x_max - x_min, y_max - y_min]
+
+    segment_mask = mask[y_min:y_max+1, x_min:x_max+1]
+    segment_mask = segment_mask.tolist()
+
+    return Segment(mask=segment_mask, bbox=segment_bbox)

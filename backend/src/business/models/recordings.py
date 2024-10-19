@@ -1,25 +1,39 @@
 import dataclasses
-import datetime
+import typing
 
-import business.models.holds
-import db.schema
+@dataclasses.dataclass
+class SensorReadingModel:
+    hold_id: str
+    x: float
+    y: float
+
+    @classmethod
+    def from_mongo(cls, mongo_force_data):
+        return cls(
+            hold_id=str(mongo_force_data.hold.id),
+            x=mongo_force_data.x,
+            y=mongo_force_data.y,
+        )
 
 @dataclasses.dataclass
 class RecordingModel:
     id: str
-    start_time: datetime.datetime
-    end_time: datetime.datetime
-    climb_id: str
-    holds: list[business.models.holds.HoldModel]
+    route_id: str
+    start_time: str
+    end_time: str
+    sensor_readings: typing.List[SensorReadingModel]
 
     @classmethod
-    def from_mongo(cls, mongo_data):
+    def from_mongo(cls, mongo_recording):
         return cls(
-            id=str(mongo_data['_id']),
-            start_time=mongo_data['start_time'],
-            end_time=mongo_data['end_time'],
-            climb_id=mongo_data['climb_id'],
-            holds=[business.models.holds.HoldModel.from_mongo(hold) for hold in mongo_data['holds']],
+            id=str(mongo_recording.id),
+            route_id=str(mongo_recording.route.id),
+            start_time=mongo_recording.start_time.isoformat(),
+            end_time=mongo_recording.end_time.isoformat(),
+            sensor_readings=[
+                SensorReadingModel.from_mongo(reading)
+                for reading in mongo_recording.sensor_readings
+            ],
         )
 
     def asdict(self):

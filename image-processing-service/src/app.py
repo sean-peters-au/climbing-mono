@@ -1,10 +1,17 @@
+import logging
+
 import flask
+import flask_cors
+
 import utils.config
 import utils.errors
-import flask_cors
+import utils.logging
 
 def create_app():
     app = flask.Flask(__name__)
+
+    utils.logging.init_logging(app)
+
     app.config.from_object(utils.config.Config)
     
     flask_cors.CORS(app, resources={r"/*": {"origins": "*"}})
@@ -25,3 +32,4 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True, host='0.0.0.0', port=5000)
+

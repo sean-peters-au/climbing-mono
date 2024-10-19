@@ -6,7 +6,6 @@ import marshmallow
 
 import business.logic.segmentation
 import business.logic.transform
-import utils.encoding
 
 board_bp = flask.Blueprint('board_bp', __name__)
 
@@ -25,10 +24,10 @@ def board_auto_segment():
 
     image_url = data['image_url']
     image = requests.get(image_url).content
-    holds = business.logic.segment.segment_holds_from_image(image, image_url)
+    segments = business.logic.segmentation.segment_holds_from_image(image)
 
     return flask.jsonify({
-        'holds': holds,
+        'segments': segments,
     }), http.HTTPStatus.OK
 
 @board_bp.route('/board/segment_hold', methods=['POST'])
@@ -46,15 +45,18 @@ def board_segment_hold():
     except marshmallow.exceptions.ValidationError as err:
         return flask.jsonify(err.messages), 400
 
-    image = requests.get(data['image_url']).content
-    hold = business.logic.segmentation.segment_hold_from_image(
+    image_url = data['image_url']
+
+    flask.g.logger.info(f'image_url: {image_url}')
+    image = requests.get(image_url).content
+    segment = business.logic.segmentation.segment_hold_from_image(
         image,
         data['x'],
         data['y'],
     )
 
     return flask.jsonify({
-        'hold': hold,
+        'segment': segment,
     }), http.HTTPStatus.OK
 
 @board_bp.route('/board/transform', methods=['POST'])
@@ -80,7 +82,8 @@ def board_transform():
     except marshmallow.exceptions.ValidationError as err:
         return flask.jsonify(err.messages), 400
 
-    image = requests.get(data['image_url']).content
+    image_url = data['image_url']
+    image = requests.get(image_url).content
     transformed_image = business.logic.transform.transform_board(
         image=image,
         board=data['board'],

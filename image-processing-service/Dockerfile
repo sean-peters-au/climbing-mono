@@ -7,11 +7,11 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0
 
+COPY static/ ./static/
+
 RUN pip install pipenv
 
 RUN pipenv run pip install --upgrade setuptools wheel
-
-RUN echo "asd"
 
 # Install GroundingDINO at 856dde20aee659246248e20734ef9ba5214f5e44
 RUN git clone https://github.com/IDEA-Research/GroundingDINO.git && \

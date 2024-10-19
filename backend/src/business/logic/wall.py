@@ -1,7 +1,11 @@
+import io
 import tempfile
+
 import flask
 import cv2
 import numpy as np
+import PIL.Image
+import PIL.ImageDraw
 
 import business.models.holds
 import business.models.routes
@@ -9,44 +13,38 @@ import business.models.walls
 import db.schema
 import utils.errors
 
-def register_wall(name, image, wall_annotations):
+def register_wall(name: str, image: PIL.Image.Image, board_annotations: list):
     # first validate that the name is unique
     walls = get_walls()
     for wall in walls:
-        if wall['name'] == name:
+        if wall.name == name:
             raise utils.errors.ValidationError("Wall with given name already exists.")
 
-    # transform the image
-    transformed_image = flask.current_app.extensions['image_processing'].transform_board(
-        image, board=wall_annotations, kickboard=True, mask=True, flatten=True
-    )
+    # remove the board background
+    board_image = _remove_board_background(image, board_annotations)
+
+    # upload the image to s3, get the url, and get the dimensions
+    board_image_uid = _upload_image(board_image)
+    board_image_url = flask.current_app.extensions['s3'].get_file_url(board_image_uid)
 
     # identify the holds
-    hold_models = flask.current_app.extensions['image_processing'].auto_segment(
-        transformed_image, x=0, y=0,
-    )
-
-    # upload image the perspective image to s3
-    _, im_buf_arr = cv2.imencode(".jpg", transformed_image)
-    byte_im = im_buf_arr.tobytes()
-    with tempfile.NamedTemporaryFile(delete=False) as temp_image_file:
-        temp_image_file.write(byte_im)
-        temp_image_file.flush()  # Ensure all data is written to the file
-        temp_image_file.seek(0)  # Go back to the start of the file
-        uid = flask.current_app.extensions['s3'].upload_file(temp_image_file)
+    hold_segments = flask.current_app.extensions['image_processing'].auto_segment(board_image_url)
 
     # create holds
-    holds = [business.models.holds.create_hold(hold_model) for hold_model in hold_models]
+    holds = [
+        business.models.holds.create_hold_from_segment(hold_segment)
+        for hold_segment in hold_segments
+    ]
 
+    # create the wall
     wall = db.schema.Wall(
         name=name,
-        height=transformed_image.shape[0],
-        width=transformed_image.shape[1],
-        image=uid,
+        height=board_image.height,
+        width=board_image.width,
+        image=board_image_uid,
         holds=holds,
         routes=[],
     )
-
     with flask.current_app.app_context():
         wall.save()
 
@@ -75,9 +73,18 @@ def add_hold_to_wall(id, x, y):
 
     return hold
 
+def delete_hold_from_wall(id, hold_id):
+    wall_doc = db.schema.Wall.objects(id=id).first()
+    if not wall_doc:
+        raise ValueError("Wall with given ID does not exist.")
+
+    hold = db.schema.Hold.objects(id=hold_id).first()
+    if not hold:
+        raise ValueError("Hold with given ID does not exist.")
+
 def get_walls():
     walls = db.schema.Wall.objects().only('name', 'height', 'width', 'image', 'routes')
-    walls = [business.models.walls.WallModel.from_mongo(wall.to_mongo()).asdict() for wall in walls]
+    walls = [business.models.walls.WallModel.from_mongo(wall) for wall in walls]
 
     return walls
 
@@ -87,70 +94,14 @@ def get_wall(id):
         raise ValueError("Wall with given ID does not exist.")
     
     # manually dereferencing because mongoengine won't apparently
-    holds_data = [business.models.holds.HoldModel.from_mongo(hold.to_mongo().to_dict()) for hold in wall_model.holds]
+    holds_data = [business.models.holds.HoldModel.from_mongo(hold) for hold in wall_model.holds]
     wall_model.holds = []
     
-    wall_data = business.models.walls.WallModel.from_mongo(wall_model.to_mongo()).asdict()
-    wall_data['holds'] = holds_data
-    wall_data['image'] = flask.current_app.extensions['s3'].get_file_url(wall_data['image'])
+    wall_data = business.models.walls.WallModel.from_mongo(wall_model)
+    wall_data.holds = holds_data
+    wall_data.image = flask.current_app.extensions['s3'].get_file_url(wall_data.image)
 
     return wall_data
-
-def upload_new_image(id, new_wall_image):
-    # Retrieve the old wall image from the database
-    wall = db.schema.Wall.objects(id=id).first()
-    if not wall:
-        raise ValueError("Wall with given ID does not exist.")
-    old_wall_image = wall.image
-
-    # Get the affine transformation
-    M = _get_affine_transform(old_wall_image, new_wall_image)
-
-    # Segment the holds on the new wall image
-    new_holds = flask.current_app.extensions['image_processing']._segment_holds_from_image(
-        new_wall_image
-    )
-
-    # Create a mapping of old holds to new holds based on proximity and matching threshold
-    old_holds_mapped = {}
-    for old_hold in wall.holds:
-        old_hold_transformed_centroid = _apply_affine_transform_to_point(M, (old_hold.centroid_x, old_hold.centroid_y))
-        # Calculate distances from the transformed centroid of the old hold to all new holds
-        distances = [
-            (hold, np.linalg.norm(
-                (hold.centroid_x - old_hold_transformed_centroid[0],
-                 hold.centroid_y - old_hold_transformed_centroid[1])
-            ))
-            for hold in new_holds
-        ]
-        # Sort the distances and get the closest hold that is within the matching threshold
-        closest_new_hold, closest_distance = min(distances, key=lambda x: x[1])
-        if closest_distance < 5:
-            # Ensure that each new hold is only mapped to one old hold
-            if closest_new_hold not in old_holds_mapped.values():
-                old_holds_mapped[old_hold] = closest_new_hold
-
-    # Determine which holds have been removed or added
-    removed_holds = set(wall.holds) - set(old_holds_mapped.keys())
-    added_holds = set(new_holds) - set(old_holds_mapped.values())
-
-    # Update the holds that have remained
-    for hold in wall.holds:
-        if (hold.bbox, hold.centroid_x, hold.centroid_y) not in removed_holds:
-            # Apply the affine transformation to the bbox and centroid
-            hold.bbox = _apply_affine_transform_to_bbox(M, hold.bbox)
-            hold.centroid_x, hold.centroid_y = _apply_affine_transform_to_point(M, (hold.centroid_x, hold.centroid_y))
-
-    # Archive the old holds and add in the new holds
-    for hold in removed_holds:
-        hold.archive()  # Assuming there is a method to archive holds
-    for hold in added_holds:
-        wall.holds.append(hold)
-
-    wall.image = new_wall_image
-
-    # Save the updated wall
-    wall.save()
 
 def add_climb_to_wall(wall_id, name, description, grade, date, hold_ids):
     wall = db.schema.Wall.objects(id=wall_id).first()
@@ -184,63 +135,53 @@ def get_climbs_for_wall(wall_id):
 
     # Fetch climbs associated with the wall
     climbs = db.schema.Route.objects(wall_id=wall)
-    climb_models = []
-    for climb in climbs:
-        climb_data = business.models.routes.RouteModel.from_mongo(climb.to_mongo()).asdict()
-        # Populate holds with their details
-        hold_details = [business.models.holds.HoldModel.from_mongo(hold.to_mongo()).asdict() for hold in climb.holds]
-        climb_data['holds'] = hold_details
-        climb_models.append(climb_data)
+    climb_models = [
+        business.models.routes.RouteModel.from_mongo(climb)
+        for climb in climbs
+    ]
 
     return climb_models
 
-def _apply_affine_transform_to_bbox(M, bbox):
-    # Transform the four corners of the bounding box
-    points = np.array([
-        [bbox[0], bbox[1]],
-        [bbox[0], bbox[3]],
-        [bbox[2], bbox[3]],
-        [bbox[2], bbox[1]]
-    ])
-    # Apply the transformation to each point
-    transformed_points = cv2.transform(np.array([points]), M)[0]
-    # Find min and max points to get the transformed bbox
-    min_x = min(point[0] for point in transformed_points)
-    min_y = min(point[1] for point in transformed_points)
-    max_x = max(point[0] for point in transformed_points)
-    max_y = max(point[1] for point in transformed_points)
-    # Return the transformed bbox as a list
-    return [min_x, min_y, max_x, max_y]
+def _remove_board_background(image: PIL.Image.Image, board_annotations: list):
+    """
+    Remove the board background from an image using polygon annotations.
 
-def _apply_affine_transform_to_point(M, point):
-    # Apply the affine transformation to the point
-    transformed_point = cv2.transform(np.array([[point]]), M)[0][0]
-    # Return the transformed point as a tuple
-    return (transformed_point[0], transformed_point[1])
+    Args:
+        image (PIL.Image.Image): The image to remove the background from.
+        board_annotations (list): List of (x, y) tuples representing the polygon vertices.
 
-def _get_affine_transform(old_wall_image, new_wall_image):
-    # Find keypoints and descriptors with SIFT
-    sift = cv2.SIFT_create()
-    keypoints_old, descriptors_old = sift.detectAndCompute(old_wall_image, None)
-    keypoints_new, descriptors_new = sift.detectAndCompute(new_wall_image, None)
+    Returns:
+        PIL.Image.Image: The image with the background removed.
+    """
+    # Ensure image has an alpha channel
+    image = image.convert("RGBA")
 
-    # Match descriptors using FLANN matcher
-    FLANN_INDEX_KDTREE = 1
-    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-    search_params = dict(checks=50)
-    flann = cv2.FlannBasedMatcher(index_params, search_params)
-    matches = flann.knnMatch(descriptors_old, descriptors_new, k=2)
+    # Create a mask for the polygon
+    mask = PIL.Image.new('L', image.size, 0)
+    polygon = [tuple(point) for point in board_annotations]
+    PIL.ImageDraw.Draw(mask).polygon(polygon, outline=1, fill=1)
 
-    # Store all the good matches as per Lowe's ratio test.
-    good_matches = []
-    for m, n in matches:
-        if m.distance < 0.7 * n.distance:
-            good_matches.append(m)
+    # Convert the mask to an array
+    mask_array = np.array(mask)
 
-    # Extract location of good matches
-    points_old = np.float32([keypoints_old[m.queryIdx].pt for m in good_matches])
-    points_new = np.float32([keypoints_new[m.trainIdx].pt for m in good_matches])
+    # Apply the mask to the image
+    image_array = np.array(image)
+    image_array[..., 3] = mask_array * 255  # Set alpha channel based on mask
+    # Set the background to white
+    image_array[..., 0] = 255
+    image_array[..., 1] = 255
+    image_array[..., 2] = 255
 
-    # Find the affine transform
-    M, mask = cv2.estimateAffinePartial2D(points_old, points_new)
-    return M
+    # Convert back to PIL Image
+    result_image = PIL.Image.fromarray(image_array, 'RGBA')
+
+    return result_image
+
+def _upload_image(image: PIL.Image.Image):
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_image_file:
+        image.save(temp_image_file, format='PNG')
+        temp_image_file.flush()  # Ensure all data is written to the file
+        temp_image_file.seek(0)  # Go back to the start of the file
+        uid = flask.current_app.extensions['s3'].upload_file(temp_image_file)
+
+    return uid

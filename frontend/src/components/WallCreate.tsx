@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import API from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import ImageAnnotator from './ImageAnnotator';
-import './WallCreate.css';
-import LoadingAnimation from './LoadingAnimation';
 
 type Point = [number, number];
 
@@ -14,10 +12,6 @@ const WallCreate: React.FC = () => {
   const [annotations, setAnnotations] = useState<Point[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
-  if (isLoading) {
-    return <LoadingAnimation />
-  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -43,7 +37,7 @@ const WallCreate: React.FC = () => {
       try {
         await API.post('/wall', {
           name,
-        image: base64Image,
+          image: base64Image,
           wall_annotations: annotations,
         });
 
@@ -93,7 +87,9 @@ const WallCreate: React.FC = () => {
             </button>
           </div>
         )}
-        <button type="submit">Create Wall</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Creating Wall...' : 'Create Wall'}
+        </button>
       </form>
     </div>
   );

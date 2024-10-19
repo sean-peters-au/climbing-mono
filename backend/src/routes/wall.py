@@ -1,10 +1,10 @@
 import base64
 import http
-import flask
-import tempfile
-import os
+import io
 
+import flask
 import marshmallow
+import PIL
 
 import business.logic.wall
 import utils.encoding
@@ -27,14 +27,9 @@ def register_wall():
     data = flask.request.get_json()
     name, image, wall_annotations = data.get('name'), data.get('image'), data.get('wall_annotations', [])
 
-    # Decode the base64 encoded image and write to a temporary file
-    with tempfile.NamedTemporaryFile(mode='wb+', delete=False) as temp_file:
-        # image comes in base 64 encoded because who knows why some bugs occur
-        # see another poor soul: https://stackoverflow.com/questions/76779195/sending-images-blob-data-to-a-server-with-multipart-form-data
-        temp_file.write(base64.b64decode(image))
-        temp_file.seek(0)  # Go to the beginning of the file to read it
-        wall_id = business.logic.wall.register_wall(name, temp_file, wall_annotations)
-    os.unlink(temp_file.name)  # Clean up the temporary file
+    # Decode the base64 encoded image and create a PIL image
+    pil_image = PIL.Image.open(io.BytesIO(base64.b64decode(image)))
+    wall_id = business.logic.wall.register_wall(name, pil_image, wall_annotations)
 
     return flask.jsonify({
         'id': str(wall_id)  # Convert ObjectId to string
@@ -44,16 +39,15 @@ def register_wall():
 def get_walls():
     walls = business.logic.wall.get_walls()
 
-    print(walls)
     return flask.jsonify({
-        'walls': walls
+        'walls': [wall.asdict() for wall in walls]
     }), http.HTTPStatus.OK
 
 @wall_bp.route('/wall/<id>', methods=['GET'])
 def get_wall(id):
     wall = business.logic.wall.get_wall(id)
 
-    return flask.jsonify(wall), http.HTTPStatus.OK
+    return flask.jsonify(wall.asdict()), http.HTTPStatus.OK
 
 @wall_bp.route('/wall/<id>/hold', methods=['POST'])
 def add_hold_to_wall(id):
@@ -75,6 +69,22 @@ def add_hold_to_wall(id):
     return flask.jsonify({
         'hold': hold,
     }), http.HTTPStatus.OK
+
+@wall_bp.route('/wall/<id>/hold', methods=['DELETE'])
+def delete_hold_from_wall(id):
+    class HoldSchema(marshmallow.Schema):
+        hold_id = marshmallow.fields.Str(required=True)
+
+    try:
+        data = HoldSchema().load(flask.request.json)
+    except marshmallow.exceptions.ValidationError as err:
+        return flask.jsonify(err.messages), 400
+
+    hold_id = data['hold_id']
+
+    business.logic.wall.delete_hold_from_wall(id, hold_id)
+
+    return flask.jsonify({}), http.HTTPStatus.NO_CONTENT
 
 @wall_bp.route('/wall/<id>/update_image', methods=['POST'])
 def update_wall_image(id):
@@ -101,7 +111,7 @@ def update_wall_image(id):
 
     wall = business.logic.wall.get_wall(id)
 
-    return flask.jsonify(wall), http.HTTPStatus.OK
+    return flask.jsonify(wall.asdict()), http.HTTPStatus.OK
 
 @wall_bp.route('/wall/<id>/climb', methods=['POST'])
 def add_climb_to_wall(id):
@@ -140,16 +150,4 @@ def get_climbs_for_wall(id):
     except ValueError as err:
         return flask.jsonify({'error': str(err)}), 404
 
-    climb_data = []
-    for climb in climbs:
-        climb_dict = {
-            'id': str(climb['id']),
-            'name': climb['name'],
-            'description': climb['description'],
-            'grade': climb['grade'],
-            'date': climb['date'],
-            'hold_ids': [str(hold['id']) for hold in climb['holds']],
-        }
-        climb_data.append(climb_dict)
-
-    return flask.jsonify({'climbs': climb_data}), http.HTTPStatus.OK
+    return flask.jsonify({'climbs': [climb.asdict() for climb in climbs]}), http.HTTPStatus.OK
