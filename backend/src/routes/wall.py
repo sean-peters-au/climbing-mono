@@ -113,12 +113,12 @@ def update_wall_image(id):
 
     return flask.jsonify(wall.asdict()), http.HTTPStatus.OK
 
-@wall_bp.route('/wall/<id>/climb', methods=['POST'])
-def add_climb_to_wall(id):
+@wall_bp.route('/wall/<id>/route', methods=['POST'])
+def add_route_to_wall(id):
     """
     Adds a climb to a wall.
     """
-    class ClimbSchema(marshmallow.Schema):
+    class RouteSchema(marshmallow.Schema):
         name = marshmallow.fields.Str(required=True)
         description = marshmallow.fields.Str(required=False, default='')
         grade = marshmallow.fields.Int(required=True)
@@ -126,11 +126,11 @@ def add_climb_to_wall(id):
         hold_ids = marshmallow.fields.List(marshmallow.fields.Str(), required=True)
 
     try:
-        data = ClimbSchema().load(flask.request.get_json())
+        data = RouteSchema().load(flask.request.get_json())
     except marshmallow.exceptions.ValidationError as err:
         return flask.jsonify(err.messages), 400
 
-    climb = business.logic.wall.add_climb_to_wall(
+    route = business.logic.wall.add_route_to_wall(
         id,
         data['name'],
         data['description'],
@@ -140,14 +140,14 @@ def add_climb_to_wall(id):
     )
 
     return flask.jsonify({
-        'climb_id': str(climb.id),
+        'route_id': str(route.id),
     }), http.HTTPStatus.CREATED
 
-@wall_bp.route('/wall/<id>/climbs', methods=['GET'])
-def get_climbs_for_wall(id):
+@wall_bp.route('/wall/<id>/routes', methods=['GET'])
+def get_routes_for_wall(id):
     try:
-        climbs = business.logic.wall.get_climbs_for_wall(id)
+        routes = business.logic.wall.get_routes_for_wall(id)
     except ValueError as err:
         return flask.jsonify({'error': str(err)}), 404
 
-    return flask.jsonify({'climbs': [climb.asdict() for climb in climbs]}), http.HTTPStatus.OK
+    return flask.jsonify({'routes': [route.asdict() for route in routes]}), http.HTTPStatus.OK

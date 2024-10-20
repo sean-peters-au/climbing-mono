@@ -1,141 +1,113 @@
 import React, { useState } from 'react';
+import { Grid, Tabs, Tab, Box, Button } from '@mui/material';
+import WallImage from './WallImage';
+import RoutesPanel from './RoutesPanel';
+import CreateRoutePanel from './CreateRoutePanel';
+import BoardPanel from './BoardPanel';
 import { useParams } from 'react-router-dom';
-import { Typography, Button, Paper, Tabs, Tab, Box } from '@mui/material';
-import Layout from '../components/Layout';
 import useWall from '../hooks/useWall';
-import useClimbs from '../hooks/useClimbs';
-import ClimbList from '../components/ClimbList';
-import ClimbCreate from '../components/ClimbCreate';
-import HoldOverlay from '../components/HoldOverlay';
-import ErrorMessage from '../components/ErrorMessage';
-import LoadingAnimation from '../components/LoadingAnimation';
-import { Point } from '../types';
-import API from '../services/api';
 
 const WallDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const { wall, loading: wallLoading, error: wallError } = useWall(id!);
-  const { climbs, loading: climbsLoading, error: climbsError } = useClimbs(id!);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [showAllHolds, setShowAllHolds] = useState(false);
   const [selectedHolds, setSelectedHolds] = useState<string[]>([]);
-  const [showAllHolds, setShowAllHolds] = useState<boolean>(false);
-  const [selectedClimbId, setSelectedClimbId] = useState<string | null>(null);
-  const [tabIndex, setTabIndex] = useState(0);
-  const [identifyMissingHoldMode, setIdentifyMissingHoldMode] = useState(false);
-
-  if (wallLoading || climbsLoading) {
-    return <LoadingAnimation message="Loading wall details..." />;
-  }
-
-  if (wallError || !wall) {
-    return <ErrorMessage message={wallError || 'Wall not found.'} />;
-  }
-
-  const handleHoldClick = (holdId: string) => {
-    setSelectedHolds((prevSelected) =>
-      prevSelected.includes(holdId)
-        ? prevSelected.filter((id) => id !== holdId)
-        : [...prevSelected, holdId]
-    );
-  };
+  const { wallId } = useParams<{ wallId: string }>();
+  const { wall, loading, error } = useWall(wallId!);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabIndex(newValue);
+    setSelectedTab(newValue);
   };
 
-  const handleMissingHoldClick = (coords: Point) => {
-    // Send POST request to backend API
-    API.post(`/wall/${wall.id}/hold`, { x: coords.x, y: coords.y })
-      .then((response) => {
-        // Refresh wall data or update holds
-        setIdentifyMissingHoldMode(false);
-        // Optionally fetch updated holds
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+  const toggleShowAllHolds = () => {
+    setShowAllHolds((prev) => !prev);
   };
 
-  const selectedClimb = climbs.find((climb) => climb.id === selectedClimbId);
+  const handleHoldClick = (holdId: string) => {
+    if (selectedHolds.includes(holdId)) {
+      setSelectedHolds(selectedHolds.filter((id) => id !== holdId));
+    } else {
+      setSelectedHolds([...selectedHolds, holdId]);
+    }
+  };
 
-  const leftColumn = (
-    <Paper elevation={1} sx={{ p: 2, height: '100%' }}>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => setShowAllHolds(!showAllHolds)}
-        sx={{ mb: 2 }}
-      >
-        {showAllHolds ? 'Hide All Holds' : 'Show All Holds'}
-      </Button>
-      <HoldOverlay
-        wall={wall}
-        holds={wall.holds}
-        selectedHolds={selectedHolds}
-        showAllHolds={showAllHolds}
-        climbHoldIds={selectedClimb?.hold_ids || []}
-        onHoldClick={handleHoldClick}
-        onMissingHoldClick={handleMissingHoldClick}
-        missingHoldMode={identifyMissingHoldMode}
-      />
-      <Button variant="outlined" onClick={() => setSelectedHolds([])} sx={{ mt: 2 }}>
-        Reset Hold Selection
-      </Button>
-    </Paper>
-  );
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-  const rightColumn = (
-    <Paper elevation={1} sx={{ p: 2, height: '100%' }}>
-      <Tabs value={tabIndex} onChange={handleTabChange}>
-        <Tab label="Routes" />
-        <Tab label="Create Route" />
-        <Tab label="Board" />
-      </Tabs>
+  if (error || !wall) {
+    return <div>Error: {error || 'Wall not found'}</div>;
+  }
 
-      {tabIndex === 0 && (
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Climbs
-          </Typography>
-          {climbsError ? (
-            <ErrorMessage message={climbsError} />
-          ) : (
-            <ClimbList
-              climbs={climbs}
-              selectedClimbId={selectedClimbId}
-              onSelectClimb={setSelectedClimbId}
-            />
-          )}
-        </Box>
-      )}
-
-      {tabIndex === 1 && (
-        <Box>
-          <ClimbCreate wallId={wall.id} selectedHolds={selectedHolds} />
-        </Box>
-      )}
-
-      {tabIndex === 2 && (
-        <Box>
+  return (
+    <Grid container>
+      {/* Left Section: Wall Image */}
+      <Grid item xs={12} md={8}>
+        <Box position="relative">
+          <WallImage
+            wall={wall}
+            holds={wall.holds}
+            selectedHolds={selectedHolds}
+            showAllHolds={showAllHolds}
+            onHoldClick={handleHoldClick}
+            climbHoldIds={[]} // Pass climb hold IDs if needed
+          />
           <Button
             variant="contained"
             color="primary"
-            onClick={() => setIdentifyMissingHoldMode(true)}
-            sx={{ mb: 2 }}
+            onClick={toggleShowAllHolds}
+            style={{ position: 'absolute', top: 16, right: 16 }}
           >
-            Identify Missing Hold
+            {showAllHolds ? 'Hide All Holds' : 'Show All Holds'}
           </Button>
-
-          {identifyMissingHoldMode && (
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Please click where the missing hold is on the wall image.
-            </Typography>
-          )}
         </Box>
-      )}
-    </Paper>
-  );
+      </Grid>
 
-  return <Layout leftColumn={leftColumn} rightColumn={rightColumn} />;
+      {/* Right Section: Panel with Tabs */}
+      <Grid item xs={12} md={4}>
+        <Box
+          sx={{
+            borderLeft: 1,
+            borderColor: 'divider',
+            height: '100vh',
+            overflowY: 'auto',
+          }}
+        >
+          {/* Tabs */}
+          <Tabs
+            value={selectedTab}
+            onChange={handleTabChange}
+            variant="fullWidth"
+            indicatorColor="primary"
+            textColor="primary"
+          >
+            <Tab label="Routes" />
+            <Tab label="Create Route" />
+            <Tab label="Board" />
+          </Tabs>
+
+          {/* Tab Panels */}
+          <Box p={2}>
+            {selectedTab === 0 && (
+              <RoutesPanel
+                wallId={wall.id}
+                holds={wall.holds}
+                setSelectedHolds={setSelectedHolds}
+                selectedHolds={selectedHolds}
+              />
+            )}
+            {selectedTab === 1 && (
+              <CreateRoutePanel
+                wallId={wall.id}
+                selectedHolds={selectedHolds}
+                setSelectedHolds={setSelectedHolds}
+              />
+            )}
+            {selectedTab === 2 && <BoardPanel wall={wall} />}
+          </Box>
+        </Box>
+      </Grid>
+    </Grid>
+  );
 };
 
 export default WallDetail;

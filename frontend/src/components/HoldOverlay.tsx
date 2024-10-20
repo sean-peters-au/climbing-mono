@@ -25,6 +25,11 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
 }) => {
   const [holdImages, setHoldImages] = useState<{ [key: string]: string }>({});
 
+  console.log('selected holds', selectedHolds);
+  useEffect(() => {
+    console.log('selected holds', selectedHolds);
+  }, [selectedHolds]);
+
   useEffect(() => {
     const images = generateHoldImages(holds);
     setHoldImages(images);
@@ -42,25 +47,20 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
   return (
     <div
       style={{
-        position: 'relative',
-        display: 'inline-block',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
         cursor: missingHoldMode ? 'crosshair' : 'default',
       }}
       onClick={handleOverlayClick}
     >
-      <img
-        src={wall.image}
-        alt={wall.name}
-        style={{ maxWidth: '100%', display: 'block' }}
-      />
       <svg
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
+          width: '100%',
+          height: '100%',
         }}
-        width="100%"
-        height="100%"
         viewBox={`0 0 ${wall.width} ${wall.height}`}
         preserveAspectRatio="xMidYMid meet"
       >

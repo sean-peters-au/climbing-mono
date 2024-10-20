@@ -8,7 +8,8 @@ class WallModel:
     name: str
     height: int
     width: int
-    image: str
+    image_id: str
+    image_url: str
     routes: list[business.models.routes.RouteModel]
     holds: list[business.models.holds.HoldModel]
 
@@ -19,7 +20,8 @@ class WallModel:
             name=mongo_wall.name,
             height=mongo_wall.height,
             width=mongo_wall.width,
-            image=str(mongo_wall.image),
+            image_id=str(mongo_wall.image),
+            image_url=None,
             routes=[business.models.routes.RouteModel.from_mongo(route) for route in mongo_wall.routes],
             holds=[business.models.holds.HoldModel.from_mongo(hold) for hold in mongo_wall.holds],
         )
@@ -30,7 +32,8 @@ class WallModel:
             'name': self.name,
             'height': self.height,
             'width': self.width,
-            'image': self.image,
+            'image_id': self.image_id,
+            'image_url': self.image_url,
             'routes': [route.asdict() for route in self.routes],
             'holds': [hold.asdict() for hold in self.holds],
         }

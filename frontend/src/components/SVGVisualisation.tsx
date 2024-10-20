@@ -1,18 +1,9 @@
 import React from 'react';
 import { Box } from '@mui/material';
-
-type ForceData = {
-  hold_id: string;
-  forces: { x: number; y: number }[];
-};
-
-type Hold = {
-  id: string;
-  bbox: [number, number, number, number];
-};
+import { SensorReading, Hold } from '../types';
 
 type SVGVisualizationProps = {
-  sensorData: ForceData[];
+  sensorData: SensorReading[];
   holds: Hold[];
 };
 

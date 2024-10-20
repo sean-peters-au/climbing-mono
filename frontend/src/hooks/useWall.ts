@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import API from '../services/api';
 import { Wall } from '../types';
 
-const useWall = (id: string) => {
+const useWall = (id: string | undefined) => {
   const [wall, setWall] = useState<Wall | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

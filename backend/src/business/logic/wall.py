@@ -99,11 +99,11 @@ def get_wall(id):
     
     wall_data = business.models.walls.WallModel.from_mongo(wall_model)
     wall_data.holds = holds_data
-    wall_data.image = flask.current_app.extensions['s3'].get_file_url(wall_data.image)
+    wall_data.image_url = flask.current_app.extensions['s3'].get_file_url(wall_data.image_id)
 
     return wall_data
 
-def add_climb_to_wall(wall_id, name, description, grade, date, hold_ids):
+def add_route_to_wall(wall_id, name, description, grade, date, hold_ids):
     wall = db.schema.Wall.objects(id=wall_id).first()
     if not wall:
         raise ValueError("Wall with given ID does not exist.")
@@ -112,7 +112,7 @@ def add_climb_to_wall(wall_id, name, description, grade, date, hold_ids):
     holds = db.schema.Hold.objects(id__in=hold_ids)
 
     # Create a new climb (route)
-    climb = db.schema.Route(
+    route = db.schema.Route(
         name=name,
         description=description,
         grade=grade,
@@ -120,27 +120,27 @@ def add_climb_to_wall(wall_id, name, description, grade, date, hold_ids):
         holds=holds,
         wall_id=wall,
     )
-    climb.save()
+    route.save()
 
-    # Add the climb to the wall
-    wall.routes.append(climb)
+    # Add the route to the wall
+    wall.routes.append(route)
     wall.save()
 
-    return climb
+    return route
 
-def get_climbs_for_wall(wall_id):
+def get_routes_for_wall(wall_id):
     wall = db.schema.Wall.objects(id=wall_id).first()
     if not wall:
         raise ValueError("Wall with given ID does not exist.")
 
-    # Fetch climbs associated with the wall
-    climbs = db.schema.Route.objects(wall_id=wall)
-    climb_models = [
-        business.models.routes.RouteModel.from_mongo(climb)
-        for climb in climbs
+    # Fetch routes associated with the wall
+    routes = db.schema.Route.objects(wall_id=wall)
+    route_models = [
+        business.models.routes.RouteModel.from_mongo(route)
+        for route in routes
     ]
 
-    return climb_models
+    return route_models
 
 def _remove_board_background(image: PIL.Image.Image, board_annotations: list):
     """

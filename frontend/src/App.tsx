@@ -11,7 +11,7 @@ const App: React.FC = () => (
       <Route path="/" element={<HomePage />} />
       <Route path="/walls/" element={<WallList />} />
       <Route path="/walls/new" element={<WallCreate />} />
-      <Route path="/walls/:id" element={<WallDetail />} />
+      <Route path="/walls/:wallId" element={<WallDetail />} />
     </Routes>
   </Router>
 );

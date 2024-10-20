@@ -12,13 +12,13 @@ export interface Hold {
   mask: boolean[][]; // 2D array representing the hold mask
 }
 
-export interface Climb {
+export interface Route {
   id: string;
   name: string;
   description: string;
   grade: string;
   date: string;
-  hold_ids: string[];
+  holds: Hold[];
 }
 
 export interface Wall {
@@ -26,7 +26,19 @@ export interface Wall {
   name: string;
   height: number;
   width: number;
-  image: string; // URL to the wall image
+  image_url: string;
   holds: Hold[];
-  routes: Climb[];
+  routes: Route[];
 }
+
+export type SensorReading = {
+  hold_id: string;
+  forces: { x: number; y: number }[];
+};
+
+export type Recording = {
+  id: string;
+  start_time: string;
+  end_time: string;
+  sensor_readings: SensorReading[];
+};

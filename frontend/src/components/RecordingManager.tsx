@@ -1,25 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import API from '../services/api';
 import { Box, Button, CircularProgress, Typography, MenuItem, Select, FormControl, InputLabel, List, ListItem, ListItemText, SelectChangeEvent } from '@mui/material';
-import SVGVisualization from './SVGVisualisation'; // We'll create this next
-
-type Recording = {
-  id: string;
-  route_id: string;
-  start_time: string;
-  end_time: string;
-  sensor_data: ForceData[];
-};
-
-type ForceData = {
-  hold_id: string;
-  forces: { x: number; y: number }[];
-};
-
-type Hold = {
-  id: string;
-  bbox: [number, number, number, number];
-};
+import SVGVisualization from './SVGVisualisation';
+import { Hold, Recording } from '../types';
 
 type Climb = {
   id: string;
@@ -147,7 +130,7 @@ const RecordingManager: React.FC = () => {
         <Box my={2}>
           <Typography variant="h5">Playback Visualization</Typography>
           <SVGVisualization
-            sensorData={currentPlayback.sensor_data}
+            sensorData={currentPlayback.sensor_readings}
             holds={holds}
           />
         </Box>
