@@ -3,29 +3,13 @@ import { Box } from '@mui/material';
 import { SensorReading, Hold } from '../types';
 
 type SVGVisualizationProps = {
-  sensorData: SensorReading[];
+  sensorReadings: SensorReading[];
   holds: Hold[];
 };
 
-const SVGVisualization: React.FC<SVGVisualizationProps> = ({ sensorData, holds }) => {
+const SVGVisualization: React.FC<SVGVisualizationProps> = ({ sensorReadings, holds }) => {
   const svgWidth = 800;
   const svgHeight = 600;
-
-  // Aggregate forces by hold
-  const holdForces = sensorData.map((data) => {
-    const totalForces = data.forces.reduce(
-      (acc, force) => ({
-        x: acc.x + force.x,
-        y: acc.y + force.y,
-      }),
-      { x: 0, y: 0 }
-    );
-    return {
-      hold_id: data.hold_id,
-      x: totalForces.x / data.forces.length,
-      y: totalForces.y / data.forces.length,
-    };
-  });
 
   return (
     <Box mt={2}>
@@ -54,21 +38,21 @@ const SVGVisualization: React.FC<SVGVisualizationProps> = ({ sensorData, holds }
         })}
 
         {/* Draw Forces */}
-        {holdForces.map((forceData) => {
-          const hold = holds.find((h) => h.id === forceData.hold_id);
+        {sensorReadings.map((reading) => {
+          const hold = holds.find((h) => h.id === reading.hold_id);
           if (!hold) return null;
 
           const [x1, y1, x2, y2] = hold.bbox;
           const centerX = (x1 + x2) / 2;
           const centerY = (y1 + y2) / 2;
 
-          const magnitude = Math.sqrt(forceData.x ** 2 + forceData.y ** 2);
+          const magnitude = Math.sqrt(reading.x ** 2 + reading.y ** 2);
           const scale = 0.1; // Adjust this value for scaling the vectors
-          const endX = centerX + forceData.x * scale;
-          const endY = centerY - forceData.y * scale; // Negative because SVG y-axis is downwards
+          const endX = centerX + reading.x * scale;
+          const endY = centerY - reading.y * scale; // Negative because SVG y-axis is downwards
 
           return (
-            <g key={forceData.hold_id}>
+            <g key={reading.hold_id}>
               <line
                 x1={centerX}
                 y1={centerY}

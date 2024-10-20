@@ -1,17 +1,15 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HomePage from './components/HomePage';
-import WallCreate from './components/WallCreate';
-import WallDetail from './components/WallDetail';
-import WallList from './components/WallList';
+import Home from './pages/Home';
+import BoardCreate from './pages/BoardCreate';
+import BoardView from './pages/BoardView';
 
 const App: React.FC = () => (
   <Router>
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/walls/" element={<WallList />} />
-      <Route path="/walls/new" element={<WallCreate />} />
-      <Route path="/walls/:wallId" element={<WallDetail />} />
+      <Route path="/" element={<Home />} />
+      <Route path="/walls/new" element={<BoardCreate />} />
+      <Route path="/walls/:wallId" element={<BoardView />} />
     </Routes>
   </Router>
 );

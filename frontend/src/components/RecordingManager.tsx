@@ -130,7 +130,7 @@ const RecordingManager: React.FC = () => {
         <Box my={2}>
           <Typography variant="h5">Playback Visualization</Typography>
           <SVGVisualization
-            sensorData={currentPlayback.sensor_readings}
+            sensorReadings={currentPlayback.sensor_readings}
             holds={holds}
           />
         </Box>

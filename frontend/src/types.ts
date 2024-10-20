@@ -33,11 +33,13 @@ export interface Wall {
 
 export type SensorReading = {
   hold_id: string;
-  forces: { x: number; y: number }[];
+  x: number;
+  y: number;
 };
 
 export type Recording = {
   id: string;
+  route_id: string;
   start_time: string;
   end_time: string;
   sensor_readings: SensorReading[];

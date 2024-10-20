@@ -3,9 +3,9 @@ import marshmallow
 
 import business.logic.sensors
 
-from . import api_bp
+sensor_bp = flask.Blueprint('sensor', __name__)
 
-@api_bp.route('/sensor', methods=['POST'])
+@sensor_bp.route('/sensor', methods=['POST'])
 def create_sensor():
     class SensorSchema(marshmallow.Schema):
         name = marshmallow.fields.Str(required=True)
@@ -21,13 +21,13 @@ def create_sensor():
 
     return flask.jsonify(sensor), 201
 
-@api_bp.route('/sensor/<id>', methods=['GET'])
+@sensor_bp.route('/sensor/<id>', methods=['GET'])
 def get_sensor(id):
     sensor = business.logic.sensors.get_sensor(id)
 
     return flask.jsonify(sensor), 200
 
-@api_bp.route('/sensor', methods=['GET'])
+@sensor_bp.route('/sensor', methods=['GET'])
 def get_sensors():
     sensors = business.logic.sensors.get_sensors()
 
