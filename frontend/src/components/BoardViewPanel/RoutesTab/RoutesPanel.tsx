@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 import RoutesList from './RoutesList';
 import RouteDetail from './RouteDetail';
 import RouteRecordings from './RouteRecordings';
-import { Route, Hold, Recording, SensorReadingFrame } from '../../types';
+import { Route, Hold, Recording, SensorReadingFrame } from '../../../types';
 
 interface RoutesPanelProps {
   wallId: string;

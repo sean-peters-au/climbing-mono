@@ -5,9 +5,17 @@ import { Link } from 'react-router-dom';
 const Header: React.FC = () => (
   <AppBar position="static">
     <Toolbar>
-      <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+      <Typography
+        variant="h4"
+        component="div"
+        sx={{
+          flexGrow: 1,
+          fontSize: '2.5rem',
+          padding: '0.75rem',
+        }}
+      >
         <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>
-          Climbing Wall App
+          Beta Board
         </Link>
       </Typography>
       <Button color="inherit" component={Link} to="/walls">

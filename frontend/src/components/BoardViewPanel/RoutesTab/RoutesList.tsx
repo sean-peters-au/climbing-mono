@@ -8,8 +8,8 @@ import {
   GridFilterModel,
   GridToolbar,
 } from '@mui/x-data-grid';
-import { useRoutes } from '../../hooks/useRoutes';
-import { Route } from '../../types';
+import { useRoutes } from '../../../hooks/useRoutes';
+import { Route } from '../../../types';
 
 interface RoutesListProps {
   wallId: string;

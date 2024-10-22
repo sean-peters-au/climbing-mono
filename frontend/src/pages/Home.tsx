@@ -1,34 +1,54 @@
-import React from 'react';
-import { Typography, Box } from '@mui/material';
-import Layout from '../components/Layout';
-import WallList from '../components/WallList';
-import LoadingAnimation from '../components/LoadingAnimation';
-import useWalls from '../hooks/useWalls';
+import React from "react";
+import { Box, Typography, Button } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import BoardSelect from "../components/BoardSelect";
+import Header from "../components/Header";
 
 const Home: React.FC = () => {
-  const { loading } = useWalls();
-
-  const leftColumn = (
-    <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {loading ? (
-        <LoadingAnimation message="Loading walls..." />
-      ) : (
-        <Typography variant="h5">Select a wall to view details</Typography>
-      )}
-    </Box>
-  );
-
-  const rightColumn = (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Climbing Walls
-      </Typography>
-      <WallList />
-    </Box>
-  );
+  const navigate = useNavigate();
 
   return (
-    <Layout leftColumn={leftColumn} rightColumn={rightColumn} />
+    <Box>
+      <Header />
+      <Box
+        sx={{
+          height: '80vh', // Full viewport height
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center', // Center vertically
+          alignItems: 'center', // Center horizontally
+          textAlign: 'center',
+          padding: 4,
+        }}
+      >
+        <Box
+          sx={{
+            display: "inline-flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 5,
+            marginTop: 4,
+          }}
+        >
+          <BoardSelect />
+          <Typography variant="h4" marginY={2}>
+            or
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => navigate("/boards/create")}
+            sx={{
+              fontSize: '2rem',
+              textTransform: 'none',
+
+            }}
+          >
+            Create Board
+          </Button>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

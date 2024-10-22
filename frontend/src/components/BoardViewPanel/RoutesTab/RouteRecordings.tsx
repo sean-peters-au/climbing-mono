@@ -7,8 +7,8 @@ import {
   ListItem,
   ListItemText,
 } from '@mui/material';
-import { useRecordings, useCreateRecording } from '../../hooks/useRecordings';
-import { Route, Recording, Hold, SensorReadingFrame, SensorReading } from '../../types';
+import { useRecordings, useCreateRecording } from '../../../hooks/useRecordings';
+import { Route, Recording, Hold, SensorReadingFrame, SensorReading } from '../../../types';
 
 interface RouteRecordingsProps {
   route: Route | null;

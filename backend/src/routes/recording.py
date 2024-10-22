@@ -35,3 +35,20 @@ def get_recording(recording_id):
         return flask.jsonify(recording_model.asdict()), 200
     except ValueError as e:
         return flask.jsonify({'error': str(e)}), 404
+
+@recording_bp.route('/recording/analysis', methods=['POST'])
+def analyze_recordings():
+    class AnalysisSchema(marshmallow.Schema):
+        recording_ids = marshmallow.fields.List(marshmallow.fields.Str, required=True)
+
+    try:
+        AnalysisSchema().load(flask.request.get_json())
+    except marshmallow.exceptions.ValidationError as err:
+        return err.messages, 400
+
+    recording_ids = flask.request.get_json().get('recording_ids')
+    recordings = business.logic.recordings.get_recordings(recording_ids)
+
+    analysis_results, plots = business.logic.analysis.perform_recordings_analysis(recordings)
+
+    return flask.jsonify({'analysis_results': analysis_results, 'plots': plots}), 200

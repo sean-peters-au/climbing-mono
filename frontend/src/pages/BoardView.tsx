@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import { Grid, Tabs, Tab, Box, Button } from "@mui/material";
+import { Grid, Box, Button } from "@mui/material";
 import WallImage from "../components/WallImage";
-import RoutesPanel from "../components/RoutesPanel/RoutesPanel";
-import CreateRoutePanel from "../components/CreateRoutePanel";
-import BoardPanel from "../components/BoardPanel";
+import BoardViewPanel from "../components/BoardViewPanel/BoardViewPanel";
 import { useParams } from "react-router-dom";
 import useWall from "../hooks/useWall";
 import { SensorReadingFrame } from "../types";
@@ -46,10 +44,19 @@ const BoardView: React.FC = () => {
   return (
     <Box>
       <Header />
-      <Grid container sx={{ height: "100vh" }}>
-        {/* Left Section: Wall Image */}
+      <Grid container sx={{ height: "90vh" }}>
+        {/* Left Section: Wall Image with Border */}
         <Grid item xs={12} md={8}>
-          <Box position="relative" sx={{ height: "100%" }}>
+          <Box
+            position="relative"
+            sx={{
+              height: "100%",
+              border: 10,
+              borderRadius: 5,
+              borderColor: "black",
+              margin: 2,
+            }}
+          >
             <WallImage
               wall={wall}
               holds={wall.holds}
@@ -57,7 +64,7 @@ const BoardView: React.FC = () => {
               showAllHolds={showAllHolds}
               onHoldClick={handleHoldClick}
               climbHoldIds={[]} // Pass climb hold IDs if needed
-              playbackData={playbackData || []} // Pass playbackData
+              playbackData={playbackData || []}
             />
             <Button
               variant="contained"
@@ -70,49 +77,26 @@ const BoardView: React.FC = () => {
           </Box>
         </Grid>
 
-        {/* Right Section: Panel with Tabs */}
+        {/* Right Section: BoardViewPanel with Border */}
         <Grid item xs={12} md={4}>
           <Box
             sx={{
-              borderLeft: 1,
-              borderColor: "divider",
+              borderColor: "black",
               height: "100%",
               overflowY: "hidden",
+              borderRadius: 5,
+              border: 10,
+              margin: 2,
             }}
           >
-            {/* Tabs */}
-            <Tabs
-              value={selectedTab}
-              onChange={handleTabChange}
-              variant="fullWidth"
-              indicatorColor="primary"
-              textColor="primary"
-            >
-              <Tab label="Routes" />
-              <Tab label="Create Route" />
-              <Tab label="Board" />
-            </Tabs>
-
-            {/* Tab Panels */}
-            <Box p={2} sx={{ height: "calc(100% - 48px)", overflowY: "auto" }}>
-              {selectedTab === 0 && (
-                <RoutesPanel
-                  wallId={wall.id}
-                  holds={wall.holds}
-                  setSelectedHolds={setSelectedHolds}
-                  selectedHolds={selectedHolds}
-                  setPlaybackData={setPlaybackData} // Pass setter function
-                />
-              )}
-              {selectedTab === 1 && (
-                <CreateRoutePanel
-                  wallId={wall.id}
-                  selectedHolds={selectedHolds}
-                  setSelectedHolds={setSelectedHolds}
-                />
-              )}
-              {selectedTab === 2 && <BoardPanel wall={wall} />}
-            </Box>
+            <BoardViewPanel
+              selectedTab={selectedTab}
+              handleTabChange={handleTabChange}
+              selectedHolds={selectedHolds}
+              setSelectedHolds={setSelectedHolds}
+              setPlaybackData={setPlaybackData}
+              wall={wall}
+            />
           </Box>
         </Grid>
       </Grid>

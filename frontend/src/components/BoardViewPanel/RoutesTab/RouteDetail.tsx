@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import { Route } from '../../types';
+import { Route } from '../../../types';
 
 interface RouteDetailProps {
   route: Route | null;
