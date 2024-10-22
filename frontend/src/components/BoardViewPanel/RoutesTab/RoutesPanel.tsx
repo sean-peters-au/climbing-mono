@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import { Box } from '@mui/material';
-import RoutesList from './RoutesList';
-import RouteDetail from './RouteDetail';
-import RouteRecordings from './RouteRecordings';
-import { Route, Hold, Recording, SensorReadingFrame } from '../../../types';
+import {
+  Box,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Typography,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import RoutesSection from './RoutesSection';
+import BetaAnalysisSection from './BetaAnalysisSection';
+import { Route, Hold, SensorReadingFrame } from '../../../types';
 
 interface RoutesPanelProps {
   wallId: string;
   holds: Hold[];
   selectedHolds: string[];
   setSelectedHolds: (holds: string[]) => void;
-  setPlaybackData: (data: SensorReadingFrame[] | null) => void; // Updated prop
+  setPlaybackData: (data: SensorReadingFrame[] | null) => void;
 }
 
 const RoutesPanel: React.FC<RoutesPanelProps> = ({
@@ -20,8 +26,13 @@ const RoutesPanel: React.FC<RoutesPanelProps> = ({
   setSelectedHolds,
   setPlaybackData,
 }) => {
+  const [expanded, setExpanded] = useState<string | false>('routes');
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
-  const [recordings, setRecordings] = useState<Recording[]>([]);
+
+  const handleAccordionChange =
+    (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+      setExpanded(isExpanded ? panel : false);
+    };
 
   const handleRouteSelect = (route: Route | null) => {
     setSelectedRoute(route);
@@ -34,31 +45,40 @@ const RoutesPanel: React.FC<RoutesPanelProps> = ({
   };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Routes List (Top 1/3) */}
-      <Box sx={{ flex: '1 1 33%', overflow: 'auto' }}>
-        <RoutesList
-          wallId={wallId}
-          selectedRoute={selectedRoute}
-          onRouteSelect={handleRouteSelect}
-        />
-      </Box>
+    <Box>
+      {/* Accordion for Routes */}
+      <Accordion
+        expanded={expanded === 'routes'}
+        onChange={handleAccordionChange('routes')}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography sx={{ fontSize: '1.5rem' }}>1. Routes</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <RoutesSection
+            wallId={wallId}
+            selectedRoute={selectedRoute}
+            onRouteSelect={handleRouteSelect}
+          />
+        </AccordionDetails>
+      </Accordion>
 
-      {/* Route Detail (Middle 1/3) */}
-      <Box sx={{ flex: '1 1 33%', overflow: 'auto', borderTop: 1, borderColor: 'divider' }}>
-        <RouteDetail route={selectedRoute} />
-      </Box>
-
-      {/* Route Recordings (Bottom 1/3) */}
-      <Box sx={{ flex: '1 1 33%', overflow: 'auto', borderTop: 1, borderColor: 'divider' }}>
-        <RouteRecordings
-          route={selectedRoute}
-          recordings={recordings}
-          setRecordings={setRecordings}
-          holds={holds}
-          setPlaybackData={setPlaybackData} // Pass the setter function
-        />
-      </Box>
+      {/* Accordion for Beta & Analysis */}
+      <Accordion
+        expanded={expanded === 'beta'}
+        onChange={handleAccordionChange('beta')}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography sx={{ fontSize: '1.5rem' }}>2. Beta & Analysis</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <BetaAnalysisSection
+            route={selectedRoute}
+            holds={holds}
+            setPlaybackData={setPlaybackData}
+          />
+        </AccordionDetails>
+      </Accordion>
     </Box>
   );
 };

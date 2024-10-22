@@ -6,38 +6,48 @@ import {
   List,
   ListItem,
   ListItemText,
+  CircularProgress,
 } from '@mui/material';
-import { useRecordings, useCreateRecording } from '../../../hooks/useRecordings';
-import { Route, Recording, Hold, SensorReadingFrame, SensorReading } from '../../../types';
+import {
+  useRecordings,
+  useCreateRecording,
+} from '../../../hooks/useRecordings';
+import {
+  Route,
+  Recording,
+  Hold,
+  SensorReadingFrame,
+  SensorReading,
+} from '../../../types';
 
 interface RouteRecordingsProps {
-  route: Route | null;
-  recordings: Recording[];
-  setRecordings: (recordings: Recording[]) => void;
+  route: Route;
   holds: Hold[];
-  setPlaybackData: (data: SensorReadingFrame[] | null) => void; // Updated prop
+  setPlaybackData: (data: SensorReadingFrame[] | null) => void;
 }
 
 const RouteRecordings: React.FC<RouteRecordingsProps> = ({
   route,
-  recordings,
-  setRecordings,
   holds,
   setPlaybackData,
 }) => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
+  const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(
+    null
+  );
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
+  const [recordings, setRecordings] = useState<Recording[]>([]);
 
-  const { getRecordings, loading: loadingRecordings, error } = useRecordings();
-  const { mutate: createRecording, loading: creatingRecording } = useCreateRecording();
+  const {
+    getRecordings,
+    loading: loadingRecordings,
+    error,
+  } = useRecordings();
+  const { mutate: createRecording, loading: creatingRecording } =
+    useCreateRecording();
 
   useEffect(() => {
-    if (route) {
-      fetchRecordings(route.id);
-    } else {
-      setRecordings([]);
-    }
+    fetchRecordings(route.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route]);
 
@@ -68,22 +78,23 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
   };
 
   const handleStartRecording = () => {
-    if (!route) return;
     setIsRecording(true);
     setRecordingStartTime(new Date());
+    // Start sensor data collection here if applicable
   };
 
   const handleEndRecording = async () => {
     setIsRecording(false);
     const recordingEndTime = new Date();
 
-    if (!route || !recordingStartTime) return;
+    if (!recordingStartTime) return;
 
     try {
       const newRecordingData = {
         route_id: route.id,
         start_time: recordingStartTime.toISOString(),
         end_time: recordingEndTime.toISOString(),
+        // Include sensor data if available
       };
 
       // Use the mutation hook to create the recording
@@ -101,16 +112,20 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
 
   const handlePlayRecording = (recording: Recording) => {
     if (recording.sensor_readings) {
-      // Interpolate sensor readings to 100 Hz
-      const interpolatedData = interpolateSensorReadings(recording.sensor_readings);
-      setPlaybackData(interpolatedData); // Pass interpolated data to BoardView
+      // Interpolate sensor readings
+      const interpolatedData = interpolateSensorReadings(
+        recording.sensor_readings
+      );
+      setPlaybackData(interpolatedData); // Pass interpolated data to playback
     } else {
       setPlaybackData(null);
     }
   };
 
   // Interpolation function
-  const interpolateSensorReadings = (originalReadings: SensorReadingFrame[]): SensorReadingFrame[] => {
+  const interpolateSensorReadings = (
+    originalReadings: SensorReadingFrame[]
+  ): SensorReadingFrame[] => {
     const interpolatedReadings: SensorReadingFrame[] = [];
 
     for (let i = 0; i < originalReadings.length - 1; i++) {
@@ -154,20 +169,10 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
     return interpolatedReadings;
   };
 
-  if (!route) {
-    return (
-      <Box sx={{ p: 2 }}>
-        <Typography variant="body1">Select a route to view recordings.</Typography>
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ p: 2, height: '100%', overflowY: 'auto' }}>
-      <Typography variant="h6">Recordings</Typography>
-
+    <Box sx={{ mt: 2 }}>
       {/* Recording Controls */}
-      <Box sx={{ my: 2, display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
         {isRecording ? (
           <>
             <Button
@@ -187,17 +192,20 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
             variant="contained"
             color="primary"
             onClick={handleStartRecording}
-            disabled={!route}
           >
             Start Recording
           </Button>
         )}
       </Box>
 
-      {loadingRecordings && <Typography>Loading recordings...</Typography>}
-      {error && <Typography>Error loading recordings: {error}</Typography>}
-
-      {recordings.length > 0 ? (
+      {/* Recordings List */}
+      {loadingRecordings ? (
+        <CircularProgress />
+      ) : error ? (
+        <Typography color="error">
+          Error loading recordings: {error.toString()}
+        </Typography>
+      ) : recordings.length > 0 ? (
         <List>
           {recordings.map((recording) => (
             <ListItem key={recording.id} disableGutters>
@@ -217,7 +225,7 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
           ))}
         </List>
       ) : (
-        <Typography variant="body2">No recordings available.</Typography>
+        <Typography>No recordings available for this route.</Typography>
       )}
     </Box>
   );
