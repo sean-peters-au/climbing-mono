@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 import typing
 
 @dataclasses.dataclass
@@ -19,20 +20,21 @@ class SensorReadingModel:
 class RecordingModel:
     id: str
     route_id: str
-    start_time: str
-    end_time: str
-    sensor_readings: typing.List[SensorReadingModel]
+    start_time: datetime.datetime
+    end_time: datetime.datetime
+    sensor_readings: typing.List[typing.List[SensorReadingModel]]
 
     @classmethod
     def from_mongo(cls, mongo_recording):
         return cls(
             id=str(mongo_recording.id),
             route_id=str(mongo_recording.route.id),
-            start_time=mongo_recording.start_time.isoformat(),
-            end_time=mongo_recording.end_time.isoformat(),
+            start_time=mongo_recording.start_time,
+            end_time=mongo_recording.end_time,
             sensor_readings=[
-                SensorReadingModel.from_mongo(reading)
-                for reading in mongo_recording.sensor_readings
+                [SensorReadingModel.from_mongo(reading)
+                for reading in sensor_reading_frame]
+                for sensor_reading_frame in mongo_recording.sensor_readings
             ],
         )
 

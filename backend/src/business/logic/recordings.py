@@ -7,30 +7,35 @@ import mongoengine.errors
 
 import business.models.recordings
 import db.schema
+import business.logic.route
 
 def create_recording(start_time: datetime.datetime, end_time: datetime.datetime, route_id: str):
-    route = db.schema.Route.objects.get(id=route_id)
+    route = business.logic.route.get_route(route_id)
 
     # sensor_data = _get_sensor_data(start_time, end_time, route)
-    sensor_data = _get_simulated_sensor_data(start_time, end_time, route)
+    sensor_reading_frames = _get_simulated_sensor_readings(start_time, end_time, route)
 
-    sensor_readings = [
-        db.schema.SensorReading(
-            x=force_data[hold_id]['x'],
-            y=force_data[hold_id]['y'],
-        )
-        for hold_id, force_data in sensor_data.items()
+    sensor_readings_frames_db = [
+        [
+            db.schema.SensorReading(
+                hold=sensor_reading['hold'],
+                x=sensor_reading['x'],
+                y=sensor_reading['y'],
+            )
+            for sensor_reading in sensor_reading_frame
+        ]
+        for sensor_reading_frame in sensor_reading_frames
     ]
 
-    recording = db.schema.Recording(
-        route=route,
+    recording_db = db.schema.Recording(
+        route=route.id,
         start_time=start_time,
         end_time=end_time,
-        sensor_readings=sensor_readings,
+        sensor_readings=sensor_readings_frames_db,
     )
-    recording.save()
+    recording_db.save()
 
-    return business.models.recordings.RecordingModel.from_mongo(recording)
+    return business.models.recordings.RecordingModel.from_mongo(recording_db)
 
 def get_recording(recording_id):
     try:
@@ -54,19 +59,31 @@ def _get_sensor_data(start_time: datetime.datetime, end_time: datetime.datetime,
 
     return sensor_data
 
-def _get_simulated_sensor_data(start_time: datetime.datetime, end_time: datetime.datetime, route: db.schema.Route):
-    sensors = db.schema.Sensor.objects(hold__in=route.holds)
-
+def _get_simulated_sensor_readings(
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
+    route: business.models.routes.RouteModel
+):
     # read simulated sensors from file in
     # ./static/hold-vector-data/simulated-hold-{n}.json (there are only 5 simulated holds)
-    simulated_sensors = [
+    simulated_sensor_readings = [
         json.load(open(f'./static/hold-vector-data/simulated-hold-{n}.json'))
-        for n in range(0, 5)
+        for n in range(1, 6)
     ]
+    
+    hold_ids = [hold.id for hold in route.holds]
 
-    sensor_data = {
-        sensor.hold.id: simulated_sensor['force_data']
-        for sensor, simulated_sensor in zip(sensors, simulated_sensors)
-    }
+    # pivot the simulated sensor readings so that each frame is a list of sensor readings from all holds
+    n_frames = len(simulated_sensor_readings[0])
+    sensor_reading_frames = []
+    for i in range(n_frames):
+        sensor_reading_frame = []
+        for hold_id, simulated_sensor_reading in zip(hold_ids, simulated_sensor_readings):
+            sensor_reading_frame.append({
+                'hold': hold_id,
+                'x': simulated_sensor_reading[i]['x'],
+                'y': simulated_sensor_reading[i]['y'],
+            })
+        sensor_reading_frames.append(sensor_reading_frame)
 
-    return sensor_data
+    return sensor_reading_frames

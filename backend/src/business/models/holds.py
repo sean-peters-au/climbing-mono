@@ -35,7 +35,6 @@ def create_hold_from_segment(segment: services.imaging_service.Segment):
         bbox=segment.bbox,
         mask=segment.mask,
     )
-    print(f'hold.mask: {hold.mask}')
     hold.save()
     return hold
 

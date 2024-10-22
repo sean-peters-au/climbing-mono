@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import { Wall, Hold } from '../types';
+import { Wall, Hold, SensorReadingFrame } from '../types';
 import HoldOverlay from './HoldOverlay';
 
 type WallImageProps = {
@@ -10,6 +10,7 @@ type WallImageProps = {
   showAllHolds: boolean;
   onHoldClick: (holdId: string) => void;
   climbHoldIds: string[];
+  playbackData?: SensorReadingFrame[];
 };
 
 const WallImage: React.FC<WallImageProps> = ({
@@ -19,12 +20,13 @@ const WallImage: React.FC<WallImageProps> = ({
   showAllHolds,
   onHoldClick,
   climbHoldIds,
+  playbackData,
 }) => {
   return (
     <Box
       sx={{
         position: 'relative',
-        height: '100vh',
+        height: '100%',
         overflow: 'hidden',
       }}
     >
@@ -41,6 +43,7 @@ const WallImage: React.FC<WallImageProps> = ({
         showAllHolds={showAllHolds}
         onHoldClick={onHoldClick}
         climbHoldIds={climbHoldIds}
+        playbackData={playbackData} // Pass playback data to HoldOverlay
       />
     </Box>
   );

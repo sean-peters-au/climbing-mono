@@ -1,73 +1,110 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box } from '@mui/material';
-import { SensorReading, Hold } from '../types';
+import { SensorReadingFrame, Hold } from '../types';
 
-type SVGVisualizationProps = {
-  sensorReadings: SensorReading[];
+interface SVGVisualizationProps {
+  sensorReadings: SensorReadingFrame[]; // Time-series data
   holds: Hold[];
-};
+}
 
 const SVGVisualization: React.FC<SVGVisualizationProps> = ({ sensorReadings, holds }) => {
-  const svgWidth = 800;
-  const svgHeight = 600;
+  const [currentFrame, setCurrentFrame] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const playbackIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (sensorReadings && sensorReadings.length > 0) {
+      setIsPlaying(true);
+      setCurrentFrame(0);
+    } else {
+      setIsPlaying(false);
+      setCurrentFrame(0);
+    }
+  }, [sensorReadings]);
+
+  useEffect(() => {
+    if (isPlaying) {
+      const totalFrames = sensorReadings.length;
+      const playbackSpeed = 10; // 100 Hz => 10ms per frame
+
+      playbackIntervalRef.current = window.setInterval(() => {
+        setCurrentFrame((prevFrame) => {
+          if (prevFrame + 1 >= totalFrames) {
+            // Stop playback
+            if (playbackIntervalRef.current !== null) {
+              clearInterval(playbackIntervalRef.current);
+            }
+            setIsPlaying(false);
+            return prevFrame;
+          } else {
+            return prevFrame + 1;
+          }
+        });
+      }, playbackSpeed);
+
+      return () => {
+        if (playbackIntervalRef.current !== null) {
+          clearInterval(playbackIntervalRef.current);
+        }
+      };
+    }
+  }, [isPlaying, sensorReadings]);
+
+  const renderSensorReadings = () => {
+    if (!sensorReadings || !isPlaying) return null;
+
+    const readings = sensorReadings[currentFrame];
+    if (!readings) return null;
+
+    return readings.map((reading, index) => {
+      const hold = holds.find((h) => h.id === reading.hold_id);
+      if (!hold) return null;
+
+      const [x, y, width, height] = hold.bbox;
+      const centerX = x + width / 2;
+      const centerY = y + height / 2;
+
+      const scale = 1.0; // Adjust scaling factor as needed
+      const endX = centerX + reading.x * scale;
+      const endY = centerY - reading.y * scale;
+
+      return (
+        <g key={`sensor-${currentFrame}-${index}`}>
+          <line
+            x1={centerX}
+            y1={centerY}
+            x2={endX}
+            y2={endY}
+            stroke="red"
+            strokeWidth={4} // Thicker lines
+            strokeLinecap="round"
+          />
+        </g>
+      );
+    });
+  };
 
   return (
     <Box mt={2}>
-      <svg width={svgWidth} height={svgHeight} style={{ border: '1px solid #ccc' }}>
-        <defs>
-          <marker
-            id="arrowhead"
-            markerWidth="10"
-            markerHeight="7"
-            refX="0"
-            refY="3.5"
-            orient="auto"
-          >
-            <polygon points="0 0, 10 3.5, 0 7" fill="red" />
-          </marker>
-        </defs>
-
+      <svg width="100%" height="100%" viewBox={`0 0 800 600`}>
         {/* Draw Holds */}
         {holds.map((hold) => {
-          const [x1, y1, x2, y2] = hold.bbox;
-          const centerX = (x1 + x2) / 2;
-          const centerY = (y1 + y2) / 2;
+          const [x, y, width, height] = hold.bbox;
           return (
-            <circle key={hold.id} cx={centerX} cy={centerY} r={10} fill="blue" />
+            <rect
+              key={hold.id}
+              x={x}
+              y={y}
+              width={width}
+              height={height}
+              fill="blue"
+              opacity={0.3}
+            />
           );
         })}
 
-        {/* Draw Forces */}
-        {sensorReadings.map((reading) => {
-          const hold = holds.find((h) => h.id === reading.hold_id);
-          if (!hold) return null;
-
-          const [x1, y1, x2, y2] = hold.bbox;
-          const centerX = (x1 + x2) / 2;
-          const centerY = (y1 + y2) / 2;
-
-          const magnitude = Math.sqrt(reading.x ** 2 + reading.y ** 2);
-          const scale = 0.1; // Adjust this value for scaling the vectors
-          const endX = centerX + reading.x * scale;
-          const endY = centerY - reading.y * scale; // Negative because SVG y-axis is downwards
-
-          return (
-            <g key={reading.hold_id}>
-              <line
-                x1={centerX}
-                y1={centerY}
-                x2={endX}
-                y2={endY}
-                stroke="red"
-                strokeWidth={2}
-                markerEnd="url(#arrowhead)"
-              />
-              <text x={endX + 5} y={endY - 5} fontSize="12" fill="black">
-                {magnitude.toFixed(2)} N
-              </text>
-            </g>
-          );
-        })}
+        {/* Render Sensor Readings */}
+        {renderSensorReadings()}
       </svg>
     </Box>
   );

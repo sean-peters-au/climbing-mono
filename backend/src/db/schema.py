@@ -90,6 +90,7 @@ class Sensor(mongoengine.Document):
     last_ping = mongoengine.DateTimeField(default=datetime.datetime.utcnow)
 
 class SensorReading(mongoengine.EmbeddedDocument):
+    hold = mongoengine.ReferenceField('Hold', required=True)
     x = mongoengine.FloatField(required=True)  # Force component in the X direction (N)
     y = mongoengine.FloatField(required=True)  # Force component in the Y direction (N)
 
@@ -99,4 +100,8 @@ class Recording(mongoengine.Document):
     start_time = mongoengine.DateTimeField(required=True)
     end_time = mongoengine.DateTimeField()
     frequency = mongoengine.FloatField(required=False, default=100)  # Frequency of data collection in Hz
-    sensor_readings = mongoengine.ListField(mongoengine.EmbeddedDocumentField(SensorReading))  # Stores force data from sensors
+    sensor_readings = mongoengine.ListField(
+        mongoengine.ListField(
+            mongoengine.EmbeddedDocumentField(SensorReading)
+        )
+    )  # Stores force data from sensors

@@ -31,16 +31,18 @@ export interface Wall {
   routes: Route[];
 }
 
-export type SensorReading = {
+export interface SensorReading {
   hold_id: string;
   x: number;
   y: number;
-};
+}
 
-export type Recording = {
+export type SensorReadingFrame = SensorReading[]; // Readings at a specific time step
+
+export interface Recording {
   id: string;
   route_id: string;
   start_time: string;
   end_time: string;
-  sensor_readings: SensorReading[];
-};
+  sensor_readings: SensorReadingFrame[]; // Time series data
+}

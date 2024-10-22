@@ -8,4 +8,4 @@ routes_bp = flask.Blueprint('routes', __name__)
 def get_route_recordings(id):
     recordings = business.logic.route.get_route_recordings(id)
 
-    return flask.jsonify(recordings), 200
+    return flask.jsonify(recordings.asdict()), 200

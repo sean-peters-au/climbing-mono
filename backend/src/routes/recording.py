@@ -3,9 +3,9 @@ import marshmallow
 
 import business.logic.recordings
 
-recordings_bp = flask.Blueprint('recordings', __name__)
+recording_bp = flask.Blueprint('recording', __name__)
 
-@recordings_bp.route('/recording', methods=['POST'])
+@recording_bp.route('/recording', methods=['POST'])
 def create_recording():
     class RecordingSchema(marshmallow.Schema):
         start_time = marshmallow.fields.DateTime(required=True)
@@ -23,12 +23,12 @@ def create_recording():
     route_id = data.get('route_id')
 
     try:
-        recording_model = business.recordings.create_recording(start_time, end_time, route_id)
+        recording_model = business.logic.recordings.create_recording(start_time, end_time, route_id)
         return flask.jsonify(recording_model.asdict()), 200
     except ValueError as e:
         return flask.jsonify({'error': str(e)}), 400
 
-@recordings_bp.route('/recordings/<recording_id>', methods=['GET'])
+@recording_bp.route('/recording/<recording_id>', methods=['GET'])
 def get_recording(recording_id):
     try:
         recording_model = business.logic.recordings.get_recording(recording_id)

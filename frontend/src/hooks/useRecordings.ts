@@ -22,4 +22,23 @@ export const useRecordings = () => {
   return { getRecordings, loading, error };
 };
 
+export const useCreateRecording = () => {
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const mutate = async (recordingData: Partial<Recording>): Promise<Recording> => {
+    try {
+      setLoading(true);
+      const response = await API.post('/recording', recordingData);
+      return response.data;
+    } catch (err) {
+      console.error('Failed to create recording:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { mutate, loading };
+};
+
 export default useRecordings;
