@@ -2,6 +2,7 @@ import flask
 import marshmallow
 
 import business.logic.recordings
+import business.logic.analysis
 
 recording_bp = flask.Blueprint('recording', __name__)
 

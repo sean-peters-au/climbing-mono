@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Stack } from '@mui/material';
 import {
   DataGrid,
   GridColDef,
@@ -10,17 +10,20 @@ import {
 } from '@mui/x-data-grid';
 import { useRoutes } from '../../../hooks/useRoutes';
 import { Route } from '../../../types';
+import RouteCreate from './RouteCreate';
 
 interface RoutesListProps {
   wallId: string;
   selectedRoute: Route | null;
   onRouteSelect: (route: Route | null) => void;
+  selectedHolds: string[];
 }
 
 const RoutesList: React.FC<RoutesListProps> = ({
   wallId,
   selectedRoute,
   onRouteSelect,
+  selectedHolds,
 }) => {
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     pageSize: 5,
@@ -29,6 +32,7 @@ const RoutesList: React.FC<RoutesListProps> = ({
   const [filterModel, setFilterModel] = useState<GridFilterModel>({
     items: [],
   });
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
 
   const { routes, loading, error } = useRoutes(wallId);
 
@@ -48,16 +52,22 @@ const RoutesList: React.FC<RoutesListProps> = ({
     onRouteSelect(null);
   };
 
+  const handleCreateRoute = () => {
+    setOpenCreateDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenCreateDialog(false);
+  };
+
+  const isRouteSelected = Boolean(selectedRoute);
+
   if (loading) {
     return <Typography>Loading routes...</Typography>;
   }
 
   if (error) {
     return <Typography>Error loading routes: {error}</Typography>;
-  }
-
-  if (!routes || routes.length === 0) {
-    return <Typography>No routes available for this wall.</Typography>;
   }
 
   const columns: GridColDef[] = [
@@ -67,7 +77,7 @@ const RoutesList: React.FC<RoutesListProps> = ({
       field: 'grade',
       headerName: 'Grade',
       width: 120,
-      valueGetter: (params) => `V${params}`,
+      valueGetter: (param) => `V${param}`,
     },
     {
       field: 'date',
@@ -80,16 +90,38 @@ const RoutesList: React.FC<RoutesListProps> = ({
 
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+      <Stack direction="row" justifyContent="space-between" mb={1}>
         <Typography variant="h6">Routes</Typography>
-        <Button
-          variant="outlined"
-          onClick={handleClearSelection}
-          disabled={!selectedRoute}
-        >
-          Clear Selection
-        </Button>
-      </Box>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCreateRoute}
+            disabled={isRouteSelected}
+            sx={{
+              '&.Mui-disabled': {
+                backgroundColor: '#bdbdbd',
+                color: '#757575',
+              },
+            }}
+          >
+            Create Route
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleClearSelection}
+            disabled={!isRouteSelected}
+            sx={{
+              '&.Mui-disabled': {
+                borderColor: '#bdbdbd',
+                color: '#757575',
+              },
+            }}
+          >
+            Clear Selection
+          </Button>
+        </Stack>
+      </Stack>
       <DataGrid
         rows={routes}
         columns={columns}
@@ -107,6 +139,12 @@ const RoutesList: React.FC<RoutesListProps> = ({
         }}
         onRowClick={handleRowClick}
         rowSelectionModel={selectedRoute ? [selectedRoute.id] : []}
+      />
+      <RouteCreate
+        open={openCreateDialog}
+        onClose={handleCloseDialog}
+        wallId={wallId}
+        selectedHolds={selectedHolds}
       />
     </Box>
   );

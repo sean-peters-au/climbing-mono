@@ -10,7 +10,7 @@ export const useRecordings = () => {
     try {
       setLoading(true);
       const response = await API.get(`/routes/${routeId}/recordings`);
-      return response.data;
+      return response.data.recordings;
     } catch (err) {
       setError('Failed to fetch recordings.');
       throw err;

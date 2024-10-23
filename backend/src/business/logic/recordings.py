@@ -1,13 +1,14 @@
 import concurrent.futures
 import datetime
 import json
+from typing import List
 
 import flask
 import mongoengine.errors
 
 import business.models.recordings
-import db.schema
 import business.logic.route
+import db.schema
 
 def create_recording(start_time: datetime.datetime, end_time: datetime.datetime, route_id: str):
     route = business.logic.route.get_route(route_id)
@@ -44,6 +45,10 @@ def get_recording(recording_id):
         raise ValueError('Recording not found')
 
     return business.models.recordings.RecordingModel.from_mongo(recording)
+
+def get_recordings(recording_ids: List[str]):
+    recordings = db.schema.Recording.objects(id__in=recording_ids)
+    return [business.models.recordings.RecordingModel.from_mongo(recording) for recording in recordings]
 
 def _get_sensor_data(start_time: datetime.datetime, end_time: datetime.datetime, route: db.schema.Route):
     sensors = db.schema.Sensor.objects(hold__in=route.holds)

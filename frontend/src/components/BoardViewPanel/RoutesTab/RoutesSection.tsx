@@ -1,38 +1,29 @@
 import React from 'react';
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import RoutesList from './RoutesList';
 import { Route } from '../../../types';
 
 interface RoutesSectionProps {
   wallId: string;
+  selectedHolds: string[];
+  setSelectedHolds: (holds: string[]) => void;
   selectedRoute: Route | null;
   onRouteSelect: (route: Route | null) => void;
 }
 
 const RoutesSection: React.FC<RoutesSectionProps> = ({
   wallId,
+  selectedHolds,
   selectedRoute,
   onRouteSelect,
 }) => {
-  const handleCreateRoute = () => {
-    // Navigate to create route page or open a modal
-    console.log('Create Route Clicked');
-  };
-
   return (
     <Box>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleCreateRoute}
-        sx={{ mb: 2 }}
-      >
-        Create Route
-      </Button>
       <RoutesList
         wallId={wallId}
         selectedRoute={selectedRoute}
         onRouteSelect={onRouteSelect}
+        selectedHolds={selectedHolds}
       />
     </Box>
   );

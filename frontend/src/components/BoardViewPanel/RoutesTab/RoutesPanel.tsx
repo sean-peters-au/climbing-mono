@@ -57,6 +57,8 @@ const RoutesPanel: React.FC<RoutesPanelProps> = ({
         <AccordionDetails>
           <RoutesSection
             wallId={wallId}
+            selectedHolds={selectedHolds}
+            setSelectedHolds={setSelectedHolds}
             selectedRoute={selectedRoute}
             onRouteSelect={handleRouteSelect}
           />

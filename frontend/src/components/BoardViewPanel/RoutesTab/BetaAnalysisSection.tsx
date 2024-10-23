@@ -1,6 +1,9 @@
-import React from 'react';
+// frontend/src/components/BoardViewPanel/RoutesTab/BetaAnalysisSection.tsx
+
+import React, { useState } from 'react';
 import { Box, Typography, Divider } from '@mui/material';
 import RouteRecordings from './RouteRecordings';
+import AnalysisDetails from './AnalysisDetails';
 import { Route, Hold, SensorReadingFrame } from '../../../types';
 
 interface BetaAnalysisSectionProps {
@@ -14,23 +17,19 @@ const BetaAnalysisSection: React.FC<BetaAnalysisSectionProps> = ({
   holds,
   setPlaybackData,
 }) => {
+  const [selectedRecordingIds, setSelectedRecordingIds] = useState<string[]>([]);
+
   if (!route) {
     return (
-      <Typography variant="body1">
-        Select a route to view beta and analysis.
-      </Typography>
+      <Box sx={{ p: 2 }}>
+        <Typography variant="body1">Select a route to view beta and analysis.</Typography>
+      </Box>
     );
   }
 
   return (
-    <Box>
-      {/* Selected Route Information */}
+    <Box sx={{ p: 2 }}>
       <Typography variant="h6" gutterBottom>
-        Selected Route: {route.name}
-      </Typography>
-
-      {/* Recordings Section */}
-      <Typography variant="subtitle1" gutterBottom>
         Recordings
       </Typography>
       <Divider sx={{ mb: 2 }} />
@@ -38,17 +37,19 @@ const BetaAnalysisSection: React.FC<BetaAnalysisSectionProps> = ({
         route={route}
         holds={holds}
         setPlaybackData={setPlaybackData}
+        selectedRecordingIds={selectedRecordingIds}
+        setSelectedRecordingIds={setSelectedRecordingIds}
       />
 
-      {/* Analysis Section */}
-      <Typography variant="subtitle1" gutterBottom sx={{ mt: 4 }}>
+      <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
         Analysis
       </Typography>
       <Divider sx={{ mb: 2 }} />
-      {/* Include your analysis components here */}
-      <Typography variant="body2">
-        Analysis content will be available soon.
-      </Typography>
+      <AnalysisDetails
+        selectedRecordingIds={selectedRecordingIds}
+        holds={holds}
+        route={route}
+      />
     </Box>
   );
 };
