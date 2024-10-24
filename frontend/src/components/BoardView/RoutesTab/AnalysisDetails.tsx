@@ -28,7 +28,6 @@ interface AnalysisResult {
 
 const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
   selectedRecordingIds,
-  route,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[] | null>(null);
