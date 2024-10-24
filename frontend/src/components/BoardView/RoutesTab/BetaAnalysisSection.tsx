@@ -1,28 +1,22 @@
-// frontend/src/components/BoardViewPanel/RoutesTab/BetaAnalysisSection.tsx
+// frontend/src/components/BoardView/RoutesTab/BetaAnalysisSection.tsx
 
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Box, Typography, Divider } from '@mui/material';
 import RouteRecordings from './RouteRecordings';
 import AnalysisDetails from './AnalysisDetails';
-import { Route, Hold, SensorReadingFrame } from '../../../types';
+import { BoardViewContext } from '../BoardViewContext';
 
-interface BetaAnalysisSectionProps {
-  route: Route | null;
-  holds: Hold[];
-  setPlaybackData: (data: SensorReadingFrame[] | null) => void;
-}
+const BetaAnalysisSection: React.FC = () => {
+  const { selectedRoute } = useContext(BoardViewContext)!;
 
-const BetaAnalysisSection: React.FC<BetaAnalysisSectionProps> = ({
-  route,
-  holds,
-  setPlaybackData,
-}) => {
   const [selectedRecordingIds, setSelectedRecordingIds] = useState<string[]>([]);
 
-  if (!route) {
+  if (!selectedRoute) {
     return (
       <Box sx={{ p: 2 }}>
-        <Typography variant="body1">Select a route to view beta and analysis.</Typography>
+        <Typography variant="body1">
+          Select a route to view beta and analysis.
+        </Typography>
       </Box>
     );
   }
@@ -34,9 +28,7 @@ const BetaAnalysisSection: React.FC<BetaAnalysisSectionProps> = ({
       </Typography>
       <Divider sx={{ mb: 2 }} />
       <RouteRecordings
-        route={route}
-        holds={holds}
-        setPlaybackData={setPlaybackData}
+        route={selectedRoute}
         selectedRecordingIds={selectedRecordingIds}
         setSelectedRecordingIds={setSelectedRecordingIds}
       />
@@ -47,8 +39,7 @@ const BetaAnalysisSection: React.FC<BetaAnalysisSectionProps> = ({
       <Divider sx={{ mb: 2 }} />
       <AnalysisDetails
         selectedRecordingIds={selectedRecordingIds}
-        holds={holds}
-        route={route}
+        route={selectedRoute}
       />
     </Box>
   );

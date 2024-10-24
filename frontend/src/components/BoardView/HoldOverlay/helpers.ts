@@ -1,5 +1,5 @@
 // src/utils/holdUtils.ts
-import { Hold } from '../../types';
+import { Hold } from '../../../types';
 
 export const generateHoldImages = (holds: Hold[]): { [key: string]: string } => {
   const images: { [key: string]: string } = {};
@@ -53,7 +53,7 @@ export const createHoldImage = (
   const borderImageData = createMaskImageData(borderColor);
 
   // Create the fill mask image data
-  const fillColor = { r: 255, g: 0, b: 0 }; // Red
+  const fillColor = { r: 255, g: 0, b: 0, a: 255 }; // Red
   const fillImageData = createMaskImageData(fillColor);
 
   // Create offscreen canvas for border mask
@@ -104,4 +104,22 @@ export const createHoldImage = (
   );
 
   return canvas.toDataURL();
+};
+
+/*
+ * Returns an array of hold numbers in order of their appearance on the board
+ */
+export const getHoldNumbers = (holds: Hold[]): { [key: string]: number } => {
+  // First sort the holds by their y-coordinate (and then x-coordinate if there are ties)
+  const sortedHolds = holds.sort((a, b) => {
+    if (a.bbox[1] !== b.bbox[1]) return b.bbox[1] - a.bbox[1];
+    return b.bbox[0] - a.bbox[0];
+  });
+
+  const holdNumbers: { [key: string]: number } = {};
+  sortedHolds.forEach((hold, index) => {
+    holdNumbers[hold.id] = index + 1;
+  });
+
+  return holdNumbers;
 };

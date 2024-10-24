@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Hold, SensorReadingFrame } from '../../types';
+import { Hold, SensorReadingFrame } from '../../../types';
 
 interface HoldVectorsProps {
   holds: Hold[];

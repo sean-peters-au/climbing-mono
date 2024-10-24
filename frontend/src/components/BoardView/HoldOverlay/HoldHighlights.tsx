@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Hold } from '../../types';
+import { Hold } from '../../../types';
 import { generateHoldImages } from './helpers';
 
 interface HoldHighlightsProps {

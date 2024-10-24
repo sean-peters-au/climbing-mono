@@ -150,3 +150,8 @@ def generate_hold_load_time_series_plots(df, recording_id):
         plot_json = pio.to_json(fig)
         hold_plots[hold] = plot_json
     return hold_plots
+
+def _get_hold_numbers(holds: list[business.models.routes.HoldModel]):
+    holds.sort(key=lambda x: (x.bbox[1], x.bbox[0]))
+    hold_numbers = {hold.id: index + 1 for index, hold in enumerate(holds)}
+    return hold_numbers

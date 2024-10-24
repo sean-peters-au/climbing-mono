@@ -1,36 +1,38 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Wall, Hold, Point, SensorReadingFrame } from '../../types';
+import React, { useState, useEffect, useRef, useContext, useMemo } from 'react';
+import { Point } from '../../../types';
 import HoldHighlights from './HoldHighlights';
 import HoldVectors from './HoldVectors';
+import { BoardViewContext } from '../BoardViewContext';
+import HoldNumbers from './HoldNumbers';
 
 interface HoldOverlayProps {
-  wall: Wall;
-  holds: Hold[];
-  selectedHolds: string[];
-  showAllHolds: boolean;
-  climbHoldIds: string[];
-  onHoldClick: (holdId: string) => void;
   onMissingHoldClick?: (coords: Point) => void;
   missingHoldMode?: boolean;
-  playbackData?: SensorReadingFrame[];
 }
 
 const HoldOverlay: React.FC<HoldOverlayProps> = ({
-  wall,
-  holds,
-  selectedHolds,
-  showAllHolds,
-  climbHoldIds,
-  onHoldClick,
   onMissingHoldClick,
   missingHoldMode = false,
-  playbackData,
 }) => {
+  const {
+    wall,
+    holds,
+    selectedHolds,
+    showAllHolds,
+    handleHoldClick,
+    playbackData,
+    selectedRoute,
+  } = useContext(BoardViewContext)!;
+
+  // Compute climbHoldIds from selectedRoute
+  const climbHoldIds = useMemo(() => {
+    return selectedRoute ? selectedRoute.holds.map((hold) => hold.id) : [];
+  }, [selectedRoute]);
+
   const [currentFrame, setCurrentFrame] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const playbackIntervalRef = useRef<number | null>(null);
 
-  // Constants for frame rate control
   const FRAME_RATE = 100; // Desired frame rate in Hz
   const FRAME_DURATION_MS = 1000 / FRAME_RATE; // Duration of each frame in ms
 
@@ -75,7 +77,7 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
         }
       };
     }
-  }, [isPlaying, playbackData]);
+  }, [FRAME_DURATION_MS, isPlaying, playbackData]);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (missingHoldMode && onMissingHoldClick) {
@@ -112,19 +114,20 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
           selectedHolds={selectedHolds}
           showAllHolds={showAllHolds}
           climbHoldIds={climbHoldIds}
-          onHoldClick={onHoldClick}
+          onHoldClick={handleHoldClick}
           missingHoldMode={missingHoldMode}
         />
 
         {/* Render Hold Vectors */}
         <HoldVectors
           holds={holds}
-          playbackData={playbackData}
+          playbackData={playbackData || []}
           currentFrame={currentFrame}
           isPlaying={isPlaying}
         />
 
-        {/* Additional overlays can be added here */}
+        {/* Render Hold Numbers */}
+        <HoldNumbers />
       </svg>
     </div>
   );

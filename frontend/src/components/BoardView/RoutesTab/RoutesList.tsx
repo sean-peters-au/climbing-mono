@@ -6,7 +6,9 @@ import {
   GridRowParams,
   GridPaginationModel,
   GridFilterModel,
-  GridToolbar,
+  GridToolbarQuickFilter,
+  GridToolbarFilterButton,
+  GridToolbarContainer,
 } from '@mui/x-data-grid';
 import { useRoutes } from '../../../hooks/useRoutes';
 import { Route } from '../../../types';
@@ -16,14 +18,12 @@ interface RoutesListProps {
   wallId: string;
   selectedRoute: Route | null;
   onRouteSelect: (route: Route | null) => void;
-  selectedHolds: string[];
 }
 
 const RoutesList: React.FC<RoutesListProps> = ({
   wallId,
   selectedRoute,
   onRouteSelect,
-  selectedHolds,
 }) => {
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     pageSize: 5,
@@ -71,11 +71,12 @@ const RoutesList: React.FC<RoutesListProps> = ({
   }
 
   const columns: GridColDef[] = [
-    { field: 'name', headerName: 'Name', flex: 1 },
+    { field: 'name', headerName: 'Name', flex: 2 },
     { field: 'description', headerName: 'Description', flex: 2 },
     {
       field: 'grade',
       headerName: 'Grade',
+      type: 'number',
       width: 120,
       valueGetter: (param) => `V${param}`,
     },
@@ -131,7 +132,7 @@ const RoutesList: React.FC<RoutesListProps> = ({
         pageSizeOptions={[5, 10, 20]}
         filterModel={filterModel}
         onFilterModelChange={(model) => setFilterModel(model)}
-        slots={{ toolbar: GridToolbar }}
+        slots={{ toolbar: RoutesListToolbar }}
         slotProps={{
           toolbar: {
             showQuickFilter: true,
@@ -143,10 +144,18 @@ const RoutesList: React.FC<RoutesListProps> = ({
       <RouteCreate
         open={openCreateDialog}
         onClose={handleCloseDialog}
-        wallId={wallId}
-        selectedHolds={selectedHolds}
       />
     </Box>
+  );
+};
+
+const RoutesListToolbar = () => {
+  // Just the quick filter and the filter button
+  return (
+    <GridToolbarContainer>
+      <GridToolbarFilterButton />
+      <GridToolbarQuickFilter />
+    </GridToolbarContainer>
   );
 };
 

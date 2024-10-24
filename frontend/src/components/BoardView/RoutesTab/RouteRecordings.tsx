@@ -1,6 +1,6 @@
 // frontend/src/components/BoardViewPanel/RoutesTab/RouteRecordings.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   Box,
   Typography,
@@ -9,23 +9,21 @@ import {
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useRecordings, useCreateRecording } from '../../../hooks/useRecordings';
-import { Route, Recording, Hold, SensorReadingFrame } from '../../../types';
+import { Route, Recording, SensorReadingFrame } from '../../../types';
+import { BoardViewContext } from '../BoardViewContext';
 
 interface RouteRecordingsProps {
   route: Route;
-  holds: Hold[];
-  setPlaybackData: (data: SensorReadingFrame[] | null) => void;
   selectedRecordingIds: string[];
   setSelectedRecordingIds: (ids: string[]) => void;
 }
 
 const RouteRecordings: React.FC<RouteRecordingsProps> = ({
   route,
-  holds,
-  setPlaybackData,
   selectedRecordingIds,
   setSelectedRecordingIds,
 }) => {
+  const { setPlaybackData } = useContext(BoardViewContext)!;
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
@@ -136,18 +134,50 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
 
   const handlePlayRecording = (recording: Recording) => {
     if (recording.sensor_readings) {
+      console.log('recording.sensor_readings', recording.sensor_readings);
       // Interpolate sensor readings to 100 Hz
       const interpolatedData = interpolateSensorReadings(recording.sensor_readings);
       setPlaybackData(interpolatedData); // Pass interpolated data to BoardView
+      console.log('interpolatedData', interpolatedData);
     } else {
       setPlaybackData(null);
     }
   };
 
-  // Interpolation function (same as your existing code)
   const interpolateSensorReadings = (originalReadings: SensorReadingFrame[]): SensorReadingFrame[] => {
-    // ... your existing interpolation logic ...
-    return []; // Return interpolated readings
+    if (originalReadings.length < 2) return originalReadings;
+
+    const interpolatedReadings: SensorReadingFrame[] = [];
+    const targetFrameRate = 100; // Hz
+    const sourceFrameRate = 10; // Hz
+    const interpolationFactor = targetFrameRate / sourceFrameRate;
+
+    for (let i = 0; i < originalReadings.length - 1; i++) {
+      const currentFrame = originalReadings[i];
+      const nextFrame = originalReadings[i + 1];
+
+      // Add the current frame
+      interpolatedReadings.push(currentFrame);
+
+      // Create interpolated frames between current and next
+      for (let j = 1; j < interpolationFactor; j++) {
+        const t = j / interpolationFactor;
+        const interpolatedFrame = currentFrame.map((currentReading, sensorIndex) => {
+          const nextReading = nextFrame[sensorIndex];
+          return {
+            hold_id: currentReading.hold_id,
+            x: currentReading.x + (nextReading.x - currentReading.x) * t,
+            y: currentReading.y + (nextReading.y - currentReading.y) * t,
+          };
+        });
+        interpolatedReadings.push(interpolatedFrame);
+      }
+    }
+
+    // Add the last frame
+    interpolatedReadings.push(originalReadings[originalReadings.length - 1]);
+
+    return interpolatedReadings;
   };
 
   if (loadingRecordings) {

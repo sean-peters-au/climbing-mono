@@ -1,13 +1,12 @@
-// frontend/src/components/BoardViewPanel/RoutesTab/AnalysisDetails.tsx
+// frontend/src/components/BoardView/RoutesTab/AnalysisDetails.tsx
 
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import API from '../../../services/api';
-import { Route, Hold } from '../../../types';
+import { Route } from '../../../types';
 
 interface AnalysisDetailsProps {
   selectedRecordingIds: string[];
-  holds: Hold[];
   route: Route;
 }
 
@@ -29,7 +28,6 @@ interface AnalysisResult {
 
 const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
   selectedRecordingIds,
-  holds,
   route,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);

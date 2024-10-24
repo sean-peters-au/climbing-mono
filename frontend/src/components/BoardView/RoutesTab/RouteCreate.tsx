@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,27 +11,25 @@ import {
   DialogActions,
 } from '@mui/material';
 import { useCreateRoute } from '../../../hooks/useRoutes';
+import { BoardViewContext } from '../BoardViewContext';
 
 interface RouteCreateProps {
   open: boolean;
   onClose: () => void;
-  wallId: string;
-  selectedHolds: string[];
 }
 
 const RouteCreate: React.FC<RouteCreateProps> = ({
   open,
   onClose,
-  wallId,
-  selectedHolds,
 }) => {
+  const { wall, selectedHolds: selectedHolds } = useContext(BoardViewContext)!;
   const [formData, setFormData] = useState({
     name: '',
     grade: 0,
     description: '',
   });
   const [message, setMessage] = useState<string>('');
-  const { createRoute, loading, error } = useCreateRoute(wallId);
+  const { createRoute, loading, error } = useCreateRoute(wall.id);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
