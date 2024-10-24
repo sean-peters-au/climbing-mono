@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import { Wall, Hold, SensorReadingFrame } from '../types';
-import HoldOverlay from './HoldOverlay';
+import HoldOverlay from './HoldOverlay/HoldOverlay';
 
 type WallImageProps = {
   wall: Wall;

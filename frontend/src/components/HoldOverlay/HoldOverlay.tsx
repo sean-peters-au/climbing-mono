@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Wall, Hold, Point, SensorReadingFrame } from '../types';
-import { generateHoldImages } from '../utils/holdUtils';
+import React, { useState, useEffect, useRef } from 'react';
+import { Wall, Hold, Point, SensorReadingFrame } from '../../types';
+import HoldHighlights from './HoldHighlights';
+import HoldVectors from './HoldVectors';
 
 interface HoldOverlayProps {
   wall: Wall;
@@ -74,10 +75,7 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
         }
       };
     }
-  }, [FRAME_DURATION_MS, isPlaying, playbackData]);
-
-  // Generate hold images
-  const holdImages = useMemo(() => generateHoldImages(holds), [holds]);
+  }, [isPlaying, playbackData]);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (missingHoldMode && onMissingHoldClick) {
@@ -87,40 +85,6 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
       onMissingHoldClick({ x, y });
     }
   };
-
-  // Memoize sensor readings to prevent unnecessary recalculations
-  const sensorReadings = useMemo(() => {
-    if (!playbackData || !isPlaying) return null;
-    const readings = playbackData[currentFrame];
-    if (!readings) return null;
-
-    return readings.map((reading, index) => {
-      const hold = holds.find((h) => h.id === reading.hold_id);
-      if (!hold) return null;
-
-      const [x, y, width, height] = hold.bbox;
-      const centerX = x + width / 2;
-      const centerY = y + height / 2;
-
-      const scale = 1.0; // Adjust scaling factor as needed
-      const endX = centerX + reading.x * scale;
-      const endY = centerY - reading.y * scale;
-
-      return (
-        <g key={`sensor-${currentFrame}-${index}`}>
-          <line
-            x1={centerX}
-            y1={centerY}
-            x2={endX}
-            y2={endY}
-            stroke="red"
-            strokeWidth={4} // Thicker lines
-            strokeLinecap="round"
-          />
-        </g>
-      );
-    });
-  }, [playbackData, isPlaying, currentFrame, holds]);
 
   return (
     <div
@@ -142,39 +106,25 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
         viewBox={`0 0 ${wall.width} ${wall.height}`}
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Render holds */}
-        {holds.map((hold: Hold) => {
-          const holdId = hold.id;
-          const isSelected = selectedHolds.includes(holdId);
-          const isClimbHold = climbHoldIds.includes(holdId);
-          const isVisible = showAllHolds || isSelected || isClimbHold;
-          const [x, y, width, height] = hold.bbox;
+        {/* Render Hold Highlights */}
+        <HoldHighlights
+          holds={holds}
+          selectedHolds={selectedHolds}
+          showAllHolds={showAllHolds}
+          climbHoldIds={climbHoldIds}
+          onHoldClick={onHoldClick}
+          missingHoldMode={missingHoldMode}
+        />
 
-          return (
-            <image
-              key={holdId}
-              href={holdImages[holdId]}
-              x={x}
-              y={y}
-              width={width}
-              height={height}
-              style={{
-                opacity: isVisible ? (isSelected || isClimbHold ? 0.8 : 0.5) : 0,
-                cursor: missingHoldMode ? 'not-allowed' : 'pointer',
-                pointerEvents: missingHoldMode ? 'none' : 'all',
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!missingHoldMode) {
-                  onHoldClick(holdId);
-                }
-              }}
-            />
-          );
-        })}
+        {/* Render Hold Vectors */}
+        <HoldVectors
+          holds={holds}
+          playbackData={playbackData}
+          currentFrame={currentFrame}
+          isPlaying={isPlaying}
+        />
 
-        {/* Render sensor readings */}
-        {sensorReadings}
+        {/* Additional overlays can be added here */}
       </svg>
     </div>
   );

@@ -1,5 +1,5 @@
 // src/utils/holdUtils.ts
-import { Hold } from '../types';
+import { Hold } from '../../types';
 
 export const generateHoldImages = (holds: Hold[]): { [key: string]: string } => {
   const images: { [key: string]: string } = {};
