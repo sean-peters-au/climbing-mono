@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import API from '../../../services/api';
 import { Route } from '../../../types';
+import Plot from 'react-plotly.js';
+import Plotly from 'plotly.js';
 
 interface AnalysisDetailsProps {
   selectedRecordingIds: string[];
@@ -16,13 +18,19 @@ interface AnalysisResult {
   active_duration: number;
   total_load_per_second: number;
   peak_load: number;
-  average_load_per_hold: { [hold_id: string]: number };
-  load_distribution: { [hold_id: string]: number };
+  average_load_per_hold: { [holdNumber: string]: number };
+  load_distribution: { [holdNumber: string]: number };
   peak_load_rate: number;
-  hold_engagement_sequence: string[];
+  hold_engagement_sequence: number[];
   plots: {
-    load_time_series: any;
-    hold_load_time_series: { [hold_id: string]: any };
+    load_time_series: {
+      data: Plotly.Data[];
+      layout: Partial<Plotly.Layout>;
+    };
+    load_distribution: {
+      data: Plotly.Data[];
+      layout: Partial<Plotly.Layout>;
+    };
   };
 }
 
@@ -85,57 +93,67 @@ const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
 
   return (
     <Box sx={{ mt: 2 }}>
-      {analysisResults.map((result) => (
-        <Box key={result.recording_id} sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Analysis for Recording ID: {result.recording_id}
-          </Typography>
-          <Typography>Total Load Applied to Holds: {result.total_load.toFixed(2)}</Typography>
-          <Typography>
-            Duration of Load Applied: {result.active_duration.toFixed(2)} seconds
-          </Typography>
-          <Typography>
-            Total Load Applied Per Second: {result.total_load_per_second.toFixed(2)}
-          </Typography>
-          <Typography>Peak Load: {result.peak_load.toFixed(2)}</Typography>
+      {analysisResults.map((result) => {
+        // Parse plots if they are JSON strings
+        const loadTimeSeriesPlot =
+          typeof result.plots.load_time_series === 'string'
+            ? JSON.parse(result.plots.load_time_series)
+            : result.plots.load_time_series;
 
-          {/* Display Average Load Applied to Holds */}
-          <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-            Average Load Applied to Holds:
-          </Typography>
-          <ul>
-            {Object.entries(result.average_load_per_hold).map(([holdId, load]) => (
-              <li key={holdId}>
-                Hold {holdId}: {load.toFixed(2)}
-              </li>
-            ))}
-          </ul>
+        const loadDistributionPlot = result.plots.load_distribution;
 
-          {/* Display Load Distribution */}
-          <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-            Load Distribution Across Holds:
-          </Typography>
-          <ul>
-            {Object.entries(result.load_distribution).map(([holdId, distribution]) => (
-              <li key={holdId}>
-                Hold {holdId}: {(distribution * 100).toFixed(2)}%
-              </li>
-            ))}
-          </ul>
+        return (
+          <Box key={result.recording_id} sx={{ mb: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              Analysis for Recording ID: {result.recording_id}
+            </Typography>
+            <Typography>Total Load: {result.total_load.toFixed(2)} N</Typography>
+            <Typography>
+              Duration: {result.active_duration.toFixed(2)} seconds
+            </Typography>
+            <Typography>
+              Total Load Per Second: {result.total_load_per_second.toFixed(2)} N/s
+            </Typography>
+            <Typography>Peak Load: {result.peak_load.toFixed(2)} N</Typography>
 
-          <Typography>
-            Peak Load Rate (Load Acceleration): {result.peak_load_rate.toFixed(2)}
-          </Typography>
+            <Typography>
+              Peak Load Rate (Load Acceleration): {result.peak_load_rate.toFixed(2)} N/s
+            </Typography>
 
-          {/* Display Hold Engagement Sequence */}
-          <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-            Hold Engagement Sequence:
-          </Typography>
-          <Typography>{result.hold_engagement_sequence.join(' ➔ ')}</Typography>
+            {/* Display Hold Engagement Sequence */}
+            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+              Hold Engagement Sequence:
+            </Typography>
+            <Typography>{result.hold_engagement_sequence.join(' ➔ ')}</Typography>
 
-          {/* Add plots if necessary */}
-        </Box>
-      ))}
+            {/* Display Load Time Series Plot */}
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Load on Each Hold Over Time
+              </Typography>
+              <Plot
+                data={loadTimeSeriesPlot.data}
+                layout={loadTimeSeriesPlot.layout}
+                style={{ width: '100%', height: '400px' }}
+                config={{ responsive: true }}
+              />
+            </Box>
+
+            {/* Display Load Distribution Plot */}
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Load Distribution Across Holds Over Time
+              </Typography>
+              <Plot
+                data={loadDistributionPlot.data}
+                layout={loadDistributionPlot.layout}
+                style={{ width: '100%', height: '400px' }}
+                config={{ responsive: true }}
+              />
+            </Box>
+          </Box>
+        );
+      })}
     </Box>
   );
 };

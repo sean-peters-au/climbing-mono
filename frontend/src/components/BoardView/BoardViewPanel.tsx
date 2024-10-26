@@ -25,7 +25,7 @@ const BoardViewPanel: React.FC = () => {
       <Box sx={{ 
         flexGrow: 1,
         overflow: 'auto',
-        padding: 2
+        padding: 2,
       }}>
         {selectedTab === 0 && <RoutesTab />}
         {selectedTab === 1 && <BoardTab />}

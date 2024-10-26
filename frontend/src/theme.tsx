@@ -142,7 +142,6 @@ const theme = createTheme({
             color: '#ffffff',
             backgroundColor: '#111111',
             border: '3px solid #111111',
-            borderBottom: 'none',
           },
         },
       },
