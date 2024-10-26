@@ -1,3 +1,4 @@
+import { BorderBottom } from '@mui/icons-material';
 import { createTheme } from '@mui/material/styles';
 import '@mui/x-data-grid/themeAugmentation';
 
@@ -67,6 +68,14 @@ const theme = createTheme({
           '&.Mui-expanded': {
             border: '3px solid #111111'
           },
+          // Nested accordion styles
+          '.MuiAccordionDetails & .MuiAccordion-root': {
+            border: '2px solid #a2a2a2',
+            margin: '8px 0',
+            '&.Mui-expanded': {
+              border: '2px solid #111111'
+            }
+          }
         },
       },
     },
@@ -84,9 +93,23 @@ const theme = createTheme({
             backgroundColor: '#e0e0e0',
             border: '3px solid #111111',
           },
+          // Nested accordion summary styles
+          '.MuiAccordionDetails & .MuiAccordion-root &': {
+            border: '2px solid #a2a2a2',
+            minHeight: '48px',
+            '& .MuiTypography-root': {
+              fontSize: '1.2rem',
+            },
+            '&.Mui-expanded': {
+              border: '2px solid #111111',
+            }
+          }
         },
         content: {
           margin: '12px 0',
+          '.MuiAccordionDetails & .MuiAccordion-root &': {
+            margin: '8px 0',
+          }
         },
       },
     },
@@ -94,6 +117,10 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           padding: '16px 24px 24px',
+          // Nested accordion details styles
+          '& .MuiAccordion-root .MuiAccordionDetails-root': {
+            padding: '12px 16px 16px',
+          }
         },
       },
     },
@@ -135,6 +162,7 @@ const theme = createTheme({
           borderRadius: '8px',
           border: '3px solid #a2a2a2',
           margin: '-2px',
+          paddingBottom: '10px',
           '&:hover': {
             backgroundColor: '#d5d5d5',
           },

@@ -27,7 +27,9 @@ const RoutesTab: React.FC = () => {
         onChange={handleAccordionChange('routes')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography sx={{ fontSize: '1.5rem' }}>1. Routes</Typography>
+          <Typography sx={{ fontSize: '1.8rem' }}>
+            Routes
+          </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <RoutesSection />
@@ -40,8 +42,8 @@ const RoutesTab: React.FC = () => {
         onChange={handleAccordionChange('beta')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography sx={{ fontSize: '1.5rem' }}>
-            2. Beta & Analysis
+          <Typography sx={{ fontSize: '1.8rem' }}>
+            Beta & Analysis
           </Typography>
         </AccordionSummary>
         <AccordionDetails>

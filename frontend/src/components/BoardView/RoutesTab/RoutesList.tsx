@@ -140,6 +140,8 @@ const RoutesList: React.FC<RoutesListProps> = ({
         }}
         onRowClick={handleRowClick}
         rowSelectionModel={selectedRoute ? [selectedRoute.id] : []}
+        // compact
+        
       />
       <RouteCreate
         open={openCreateDialog}

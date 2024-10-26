@@ -1,15 +1,21 @@
-// frontend/src/components/BoardView/RoutesTab/AnalysisDetails.tsx
-
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
-import API from '../../../services/api';
-import { Route } from '../../../types';
+import { 
+  Box, 
+  Typography, 
+  CircularProgress, 
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Paper
+} from '@mui/material';
+import API from '../../../../services/api';
 import Plot from 'react-plotly.js';
 import Plotly from 'plotly.js';
 
 interface AnalysisDetailsProps {
   selectedRecordingIds: string[];
-  route: Route;
 }
 
 interface AnalysisResult {
@@ -34,7 +40,7 @@ interface AnalysisResult {
   };
 }
 
-const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
+export const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
   selectedRecordingIds,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -91,6 +97,35 @@ const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
     );
   }
 
+  const renderMetricsTable = (result: AnalysisResult) => (
+    <TableContainer component={Paper} sx={{ mb: 3 }}>
+      <Table size="small">
+        <TableBody>
+          <TableRow>
+            <TableCell component="th" sx={{ fontWeight: 'bold' }}>Total Load</TableCell>
+            <TableCell align="right">{result.total_load.toFixed(2)} N</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell component="th" sx={{ fontWeight: 'bold' }}>Duration</TableCell>
+            <TableCell align="right">{result.active_duration.toFixed(2)} seconds</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell component="th" sx={{ fontWeight: 'bold' }}>Total Load Per Second</TableCell>
+            <TableCell align="right">{result.total_load_per_second.toFixed(2)} N/s</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell component="th" sx={{ fontWeight: 'bold' }}>Peak Load</TableCell>
+            <TableCell align="right">{result.peak_load.toFixed(2)} N</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell component="th" sx={{ fontWeight: 'bold' }}>Peak Load Rate</TableCell>
+            <TableCell align="right">{result.peak_load_rate.toFixed(2)} N/s</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+
   return (
     <Box sx={{ mt: 2 }}>
       {analysisResults.map((result) => {
@@ -105,22 +140,10 @@ const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
         return (
           <Box key={result.recording_id} sx={{ mb: 4 }}>
             <Typography variant="h6" gutterBottom>
-              Analysis for Recording ID: {result.recording_id}
+              Analysis for Recording {result.recording_id}
             </Typography>
-            <Typography>Total Load: {result.total_load.toFixed(2)} N</Typography>
-            <Typography>
-              Duration: {result.active_duration.toFixed(2)} seconds
-            </Typography>
-            <Typography>
-              Total Load Per Second: {result.total_load_per_second.toFixed(2)} N/s
-            </Typography>
-            <Typography>Peak Load: {result.peak_load.toFixed(2)} N</Typography>
+            {renderMetricsTable(result)}
 
-            <Typography>
-              Peak Load Rate (Load Acceleration): {result.peak_load_rate.toFixed(2)} N/s
-            </Typography>
-
-            {/* Display Hold Engagement Sequence */}
             <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
               Hold Engagement Sequence:
             </Typography>
@@ -128,9 +151,6 @@ const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
 
             {/* Display Load Time Series Plot */}
             <Box sx={{ mt: 4 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Load on Each Hold Over Time
-              </Typography>
               <Plot
                 data={loadTimeSeriesPlot.data}
                 layout={loadTimeSeriesPlot.layout}
@@ -141,9 +161,6 @@ const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
 
             {/* Display Load Distribution Plot */}
             <Box sx={{ mt: 4 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Load Distribution Across Holds Over Time
-              </Typography>
               <Plot
                 data={loadDistributionPlot.data}
                 layout={loadDistributionPlot.layout}
@@ -157,5 +174,3 @@ const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({
     </Box>
   );
 };
-
-export default AnalysisDetails;
