@@ -1,11 +1,17 @@
+import typing
 import business.models.sensor
-import db.schema
+import db.dao.sensor_dao
 
-def add_sensor(sensor):
-    db.schema.Sensor(**sensor).save()
+def add_sensor(sensor_data):
+    sensor_model = business.models.sensor.SensorModel(
+        name=sensor_data['name'],
+        ip_address=sensor_data['ip_address'],
+        hold_id=sensor_data['hold_id'],
+    )
+    db.dao.sensor_dao.SensorDAO.save_sensor(sensor_model)
 
-def get_sensor(id):
-    return business.models.sensor.Sensor.from_mongo(db.schema.Sensor.objects.get(id=id))
+def get_sensor(sensor_id: str) -> business.models.sensor.SensorModel:
+    return db.dao.sensor_dao.SensorDAO.get_sensor_by_id(sensor_id)
 
-def get_sensors():
-    return [business.models.sensor.Sensor.from_mongo(sensor) for sensor in db.schema.Sensor.objects]
+def get_sensors() -> typing.List[business.models.sensor.SensorModel]:
+    return db.dao.sensor_dao.SensorDAO.get_all_sensors()

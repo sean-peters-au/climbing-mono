@@ -1,0 +1,2 @@
+Styling rules for Python
+- Use absolute imports wherever possible with using `from`

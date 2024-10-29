@@ -77,11 +77,11 @@ class Hold(mongoengine.Document):
 class Route(mongoengine.Document):
     name = mongoengine.StringField(required=True)
     grade = mongoengine.IntField(required=True)
-    wall_id = mongoengine.ReferenceField(Wall)
     holds = mongoengine.ListField(mongoengine.ReferenceField(Hold))
     created_by = mongoengine.ReferenceField(Climber)
     date = mongoengine.DateTimeField()
     description = mongoengine.StringField()
+    wall_id = mongoengine.ReferenceField(Wall)
 
 class Sensor(mongoengine.Document):
     name = mongoengine.StringField(required=True)

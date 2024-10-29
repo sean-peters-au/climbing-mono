@@ -1,8 +1,6 @@
-import io
 import tempfile
 
 import flask
-import cv2
 import numpy as np
 import PIL.Image
 import PIL.ImageDraw
@@ -10,15 +8,15 @@ import PIL.ImageDraw
 import business.models.holds
 import business.models.routes
 import business.models.walls
+import db.dao.hold_dao
+import db.dao.wall_dao
 import db.schema
-import utils.errors
 
 def register_wall(name: str, image: PIL.Image.Image, board_annotations: list):
-    # first validate that the name is unique
-    walls = get_walls()
-    for wall in walls:
-        if wall.name == name:
-            raise utils.errors.ValidationError("Wall with given name already exists.")
+    # Validate uniqueness of the wall name
+    walls = db.dao.wall_dao.WallDAO.get_all_walls()
+    if any(wall.name == name for wall in walls):
+        raise ValueError("Wall with given name already exists.")
 
     # remove the board background
     board_image = _remove_board_background(image, board_annotations)
@@ -30,32 +28,34 @@ def register_wall(name: str, image: PIL.Image.Image, board_annotations: list):
     # identify the holds
     hold_segments = flask.current_app.extensions['image_processing'].auto_segment(board_image_url)
 
-    # create holds
-    holds = [
-        business.models.holds.create_hold_from_segment(hold_segment)
-        for hold_segment in hold_segments
-    ]
+    # Create hold models
+    hold_models = []
+    for segment in hold_segments:
+        hold_model = business.models.holds.HoldModel(
+            bbox=segment.bbox,
+            mask=segment.mask,
+        )
+        db.dao.hold_dao.HoldDAO.save_hold(hold_model)
+        hold_models.append(hold_model)
 
-    # create the wall
-    wall = db.schema.Wall(
+    # Create wall model
+    wall_model = business.models.walls.WallModel(
         name=name,
         height=board_image.height,
         width=board_image.width,
-        image=board_image_uid,
-        holds=holds,
-        routes=[],
+        image_id=str(board_image_uid),
+        holds=hold_models,
     )
-    with flask.current_app.app_context():
-        wall.save()
+    db.dao.wall_dao.WallDAO.save_wall(wall_model)
 
-    return wall.id
+    return wall_model.id
 
 def add_hold_to_wall(id, x, y):
-    wall_doc = db.schema.Wall.objects(id=id).first()
-    if not wall_doc:
+    wall_model = db.dao.wall_dao.WallDAO.get_wall_by_id(id)
+    if not wall_model:
         raise ValueError("Wall with given ID does not exist.")
 
-    image_url = flask.current_app.extensions['s3'].get_file_url(str(wall_doc.image))
+    image_url = flask.current_app.extensions['s3'].get_file_url(str(wall_model.image_id))
 
     # get the hold from the image processing service
     segment = flask.current_app.extensions['image_processing'].segment_hold(
@@ -68,48 +68,38 @@ def add_hold_to_wall(id, x, y):
     hold = business.models.holds.create_hold(segment)
 
     # add the hold to the wall
-    wall_doc.holds.append(hold)
-    wall_doc.save()
+    wall_model.holds.append(hold)
+    db.dao.wall_dao.WallDAO.save_wall(wall_model)
 
     return hold
 
 def delete_hold_from_wall(id, hold_id):
-    wall_doc = db.schema.Wall.objects(id=id).first()
-    if not wall_doc:
+    wall_model = db.dao.wall_dao.WallDAO.get_wall_by_id(id)
+    if not wall_model:
         raise ValueError("Wall with given ID does not exist.")
 
-    hold = db.schema.Hold.objects(id=hold_id).first()
+    hold = db.dao.hold_dao.HoldDAO.get_hold_by_id(hold_id)
     if not hold:
         raise ValueError("Hold with given ID does not exist.")
 
 def get_walls():
-    walls = db.schema.Wall.objects().only('name', 'height', 'width', 'image', 'routes')
-    walls = [business.models.walls.WallModel.from_mongo(wall) for wall in walls]
+    walls = db.dao.wall_dao.WallDAO.get_all_walls()
 
     return walls
 
 def get_wall(id):
-    wall_model = db.schema.Wall.objects(id=id).first()
-    if not wall_model:
-        raise ValueError("Wall with given ID does not exist.")
-    
-    # manually dereferencing because mongoengine won't apparently
-    holds_data = [business.models.holds.HoldModel.from_mongo(hold) for hold in wall_model.holds]
-    wall_model.holds = []
-    
-    wall_data = business.models.walls.WallModel.from_mongo(wall_model)
-    wall_data.holds = holds_data
-    wall_data.image_url = flask.current_app.extensions['s3'].get_file_url(wall_data.image_id)
+    wall_model = db.dao.wall_dao.WallDAO.get_wall_by_id(id)
+    wall_model.image_url = flask.current_app.extensions['s3'].get_file_url(wall_model.image_id)
 
-    return wall_data
+    return wall_model
 
 def add_route_to_wall(wall_id, name, description, grade, date, hold_ids):
-    wall = db.schema.Wall.objects(id=wall_id).first()
-    if not wall:
+    wall_model = db.dao.wall_dao.WallDAO.get_wall_by_id(wall_id)
+    if not wall_model:
         raise ValueError("Wall with given ID does not exist.")
 
     # Fetch Hold objects
-    holds = db.schema.Hold.objects(id__in=hold_ids)
+    holds = db.dao.hold_dao.HoldDAO.get_holds_by_ids(hold_ids)
 
     # Create a new climb (route)
     route = db.schema.Route(
@@ -118,13 +108,13 @@ def add_route_to_wall(wall_id, name, description, grade, date, hold_ids):
         grade=grade,
         date=date,
         holds=holds,
-        wall_id=wall,
+        wall_id=wall_id,
     )
     route.save()
 
     # Add the route to the wall
-    wall.routes.append(route)
-    wall.save()
+    wall_model.routes.append(route)
+    db.dao.wall_dao.WallDAO.save_wall(wall_model)
 
     return route
 
