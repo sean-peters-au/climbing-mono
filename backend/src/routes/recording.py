@@ -1,8 +1,10 @@
+import dateutil.parser
+
 import flask
 import marshmallow
 
 import business.logic.recordings
-import business.logic.analysis
+import business.logic.recording_analysis.analysis
 
 recording_bp = flask.Blueprint('recording', __name__)
 
@@ -19,8 +21,9 @@ def create_recording():
         return err.messages, 400
 
     data = flask.request.get_json()
-    start_time = data.get('start_time')
-    end_time = data.get('end_time')
+    
+    start_time = dateutil.parser.isoparse(data.get('start_time'))
+    end_time = dateutil.parser.isoparse(data.get('end_time'))
     route_id = data.get('route_id')
 
     try:
@@ -50,6 +53,8 @@ def analyze_recordings():
     recording_ids = flask.request.get_json().get('recording_ids')
     recordings = business.logic.recordings.get_recordings(recording_ids)
 
-    analysis_results, plots = business.logic.analysis.perform_recordings_analysis(recordings)
+    analysis_results = business.logic.recording_analysis.analysis.analyze_recordings(recordings)
 
-    return flask.jsonify({'analysis_results': analysis_results, 'plots': plots}), 200
+    response = flask.jsonify({'analysis_results': analysis_results})
+
+    return response, 200

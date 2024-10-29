@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Button, Stack } from '@mui/material';
+import { Box, Typography, Button, Stack, CircularProgress } from '@mui/material';
 import {
   DataGrid,
   GridColDef,
@@ -13,6 +13,7 @@ import {
 import { useRoutes } from '../../../hooks/useRoutes';
 import { Route } from '../../../types';
 import RouteCreate from './RouteCreate';
+import { QueryError } from '../../QueryError';
 
 interface RoutesListProps {
   wallId: string;
@@ -34,14 +35,26 @@ const RoutesList: React.FC<RoutesListProps> = ({
   });
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
 
-  const { routes, loading, error } = useRoutes(wallId);
+  const { data: routes, isLoading, error } = useRoutes(wallId);
+
+  if (isLoading) {
+    return <CircularProgress />;
+  }
+
+  if (!routes || routes.length === 0) {
+    return <Typography>No routes found.</Typography>;
+  }
+
+  if (error) {
+    return <QueryError error={error} />;
+  }
 
   const handleRowClick = (params: GridRowParams) => {
     const routeId = params.id as string;
     if (selectedRoute && routeId === selectedRoute.id) {
       onRouteSelect(null); // Deselect if clicking the already selected route
     } else {
-      const route = routes.find((route) => route.id === routeId);
+      const route = routes?.find((route) => route.id === routeId);
       if (route) {
         onRouteSelect(route);
       }
@@ -61,14 +74,6 @@ const RoutesList: React.FC<RoutesListProps> = ({
   };
 
   const isRouteSelected = Boolean(selectedRoute);
-
-  if (loading) {
-    return <Typography>Loading routes...</Typography>;
-  }
-
-  if (error) {
-    return <Typography>Error loading routes: {error}</Typography>;
-  }
 
   const columns: GridColDef[] = [
     { field: 'name', headerName: 'Name', flex: 2 },
@@ -141,7 +146,7 @@ const RoutesList: React.FC<RoutesListProps> = ({
         onRowClick={handleRowClick}
         rowSelectionModel={selectedRoute ? [selectedRoute.id] : []}
         // compact
-        
+
       />
       <RouteCreate
         open={openCreateDialog}

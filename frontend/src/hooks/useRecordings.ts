@@ -1,44 +1,32 @@
-import { useState } from 'react';
-import API from '../services/api';
-import { Recording } from '../types';
+import { useQuery, useMutation, useQueryClient } from "react-query";
+import { recordingQueries } from "../services/queries";
 
-export const useRecordings = () => {
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const getRecordings = async (routeId: string): Promise<Recording[]> => {
-    try {
-      setLoading(true);
-      const response = await API.get(`/routes/${routeId}/recordings`);
-      return response.data.recordings;
-    } catch (err) {
-      setError('Failed to fetch recordings.');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { getRecordings, loading, error };
+export const useRecordings = (routeId: string) => {
+  return useQuery({
+    queryKey: ['recordings', routeId],
+    queryFn: () => recordingQueries.getRecordings(routeId),
+    enabled: !!routeId
+  });
 };
 
 export const useCreateRecording = () => {
-  const [loading, setLoading] = useState<boolean>(false);
-
-  const mutate = async (recordingData: Partial<Recording>): Promise<Recording> => {
-    try {
-      setLoading(true);
-      const response = await API.post('/recording', recordingData);
-      return response.data;
-    } catch (err) {
-      console.error('Failed to create recording:', err);
-      throw err;
-    } finally {
-      setLoading(false);
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: recordingQueries.createRecording,
+    onSuccess: () => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ 
+        queryKey: ['recordings']
+      });
     }
-  };
-
-  return { mutate, loading };
+  });
 };
 
-export default useRecordings;
+export const useRecordingsAnalysis = (recordingIds: string[]) => {
+  return useQuery({
+    queryKey: ['recordings', 'analysis', recordingIds],
+    queryFn: () => recordingQueries.getAnalysis(recordingIds),
+    enabled: recordingIds.length > 0
+  });
+};

@@ -1,6 +1,6 @@
 // frontend/src/components/BoardViewPanel/RoutesTab/RouteRecordings.tsx
 
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -9,8 +9,8 @@ import {
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useRecordings, useCreateRecording } from '../../../hooks/useRecordings';
-import { Route, Recording, SensorReadingFrame } from '../../../types';
-import { BoardViewContext } from '../BoardViewContext';
+import { Route } from '../../../types';
+import { QueryError } from '../../QueryError';
 
 interface RouteRecordingsProps {
   route: Route;
@@ -23,23 +23,12 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
   selectedRecordingIds,
   setSelectedRecordingIds,
 }) => {
-  const { setPlaybackData } = useContext(BoardViewContext)!;
-  const [recordings, setRecordings] = useState<Recording[]>([]);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
 
-  const { getRecordings, loading: loadingRecordings, error } = useRecordings();
-  const { mutate: createRecording, loading: creatingRecording } = useCreateRecording();
-
-  useEffect(() => {
-    if (route) {
-      fetchRecordings(route.id);
-    } else {
-      setRecordings([]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route]);
+  const { data: recordings, isLoading, error } = useRecordings(route.id);
+  const { mutate: createRecording, isLoading: creatingRecording } = useCreateRecording();
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -58,14 +47,9 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
     };
   }, [isRecording, recordingStartTime]);
 
-  const fetchRecordings = async (routeId: string) => {
-    try {
-      const recs = await getRecordings(routeId);
-      setRecordings(recs);
-    } catch (err) {
-      console.error('Error fetching recordings:', err);
-    }
-  };
+  if (isLoading) {
+    return <CircularProgress />;
+  }
 
   const handleStartRecording = () => {
     if (!route) return;
@@ -87,10 +71,7 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
       };
 
       // Use the mutation hook to create the recording
-      const newRecording: Recording = await createRecording(newRecordingData);
-
-      // Update recordings list
-      setRecordings([...recordings, newRecording]);
+      await createRecording(newRecordingData);
 
       // Reset recording start time
       setRecordingStartTime(null);
@@ -115,72 +96,10 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
       headerName: 'End Time',
       width: 200,
       valueGetter: (params) => new Date(params).toLocaleString(),
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 150,
-      renderCell: (params) => (
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handlePlayRecording(params.row as Recording)}
-        >
-          Play
-        </Button>
-      ),
-    },
+    }
   ];
 
-  const handlePlayRecording = (recording: Recording) => {
-    if (recording.sensor_readings) {
-      console.log('recording.sensor_readings', recording.sensor_readings);
-      // Interpolate sensor readings to 100 Hz
-      const interpolatedData = interpolateSensorReadings(recording.sensor_readings);
-      setPlaybackData(interpolatedData); // Pass interpolated data to BoardView
-      console.log('interpolatedData', interpolatedData);
-    } else {
-      setPlaybackData(null);
-    }
-  };
-
-  const interpolateSensorReadings = (originalReadings: SensorReadingFrame[]): SensorReadingFrame[] => {
-    if (originalReadings.length < 2) return originalReadings;
-
-    const interpolatedReadings: SensorReadingFrame[] = [];
-    const targetFrameRate = 100; // Hz
-    const sourceFrameRate = 10; // Hz
-    const interpolationFactor = targetFrameRate / sourceFrameRate;
-
-    for (let i = 0; i < originalReadings.length - 1; i++) {
-      const currentFrame = originalReadings[i];
-      const nextFrame = originalReadings[i + 1];
-
-      // Add the current frame
-      interpolatedReadings.push(currentFrame);
-
-      // Create interpolated frames between current and next
-      for (let j = 1; j < interpolationFactor; j++) {
-        const t = j / interpolationFactor;
-        const interpolatedFrame = currentFrame.map((currentReading, sensorIndex) => {
-          const nextReading = nextFrame[sensorIndex];
-          return {
-            hold_id: currentReading.hold_id,
-            x: currentReading.x + (nextReading.x - currentReading.x) * t,
-            y: currentReading.y + (nextReading.y - currentReading.y) * t,
-          };
-        });
-        interpolatedReadings.push(interpolatedFrame);
-      }
-    }
-
-    // Add the last frame
-    interpolatedReadings.push(originalReadings[originalReadings.length - 1]);
-
-    return interpolatedReadings;
-  };
-
-  if (loadingRecordings) {
+  if (isLoading) {
     return (
       <Box sx={{ mt: 2 }}>
         <CircularProgress />
@@ -191,9 +110,7 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
 
   if (error) {
     return (
-      <Box sx={{ mt: 2 }}>
-        <Typography color="error">Error loading recordings: {error}</Typography>
-      </Box>
+      <QueryError error={error} />
     );
   }
 
@@ -228,7 +145,7 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
       </Box>
 
       {/* DataGrid for Recordings */}
-      {recordings.length > 0 ? (
+      {recordings && recordings.length > 0 ? (
         <DataGrid
           rows={recordings}
           columns={columns}

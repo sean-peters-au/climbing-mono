@@ -23,6 +23,8 @@ def create_app():
     for blueprint in blueprints:
         app.register_blueprint(blueprint, url_prefix='/api')
 
+    app.json.mimetype = 'application/json'
+
     # Registering the error handler for ValidationError
     @app.errorhandler(utils.errors.ValidationError)
     def handle_validation_error(error):

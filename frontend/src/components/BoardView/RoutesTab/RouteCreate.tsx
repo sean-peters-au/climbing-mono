@@ -9,9 +9,11 @@ import {
   Alert,
   InputAdornment,
   DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import { useCreateRoute } from '../../../hooks/useRoutes';
 import { BoardViewContext } from '../BoardViewContext';
+import { QueryError } from '../../QueryError';
 
 interface RouteCreateProps {
   open: boolean;
@@ -22,14 +24,18 @@ const RouteCreate: React.FC<RouteCreateProps> = ({
   open,
   onClose,
 }) => {
-  const { wall, selectedHolds: selectedHolds } = useContext(BoardViewContext)!;
+  const { wall, selectedHolds } = useContext(BoardViewContext)!;
   const [formData, setFormData] = useState({
     name: '',
     grade: 0,
     description: '',
   });
   const [message, setMessage] = useState<string>('');
-  const { createRoute, loading, error } = useCreateRoute(wall.id);
+  const { mutate: createRoute, isLoading, error } = useCreateRoute(wall.id);
+
+  if (isLoading) {
+    return <CircularProgress />;
+  }
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -114,23 +120,19 @@ const RouteCreate: React.FC<RouteCreateProps> = ({
             {message}
           </Alert>
         )}
-        {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
-          </Alert>
-        )}
+        <QueryError error={error} />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+        <Button onClick={onClose} disabled={isLoading}>
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           color="primary"
-          disabled={loading}
+          disabled={isLoading}
         >
-          {loading ? 'Creating...' : 'Create Route'}
+          {isLoading ? 'Creating...' : 'Create Route'}
         </Button>
       </DialogActions>
     </Dialog>

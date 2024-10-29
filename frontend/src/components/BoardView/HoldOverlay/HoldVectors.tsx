@@ -1,36 +1,25 @@
-import React, { useMemo } from 'react';
-import { Hold, SensorReadingFrame } from '../../../types';
+import React, { useContext, useMemo } from 'react';
+import { BoardViewContext } from '../BoardViewContext';
 
-interface HoldVectorsProps {
-  holds: Hold[];
-  playbackData?: SensorReadingFrame[];
-  currentFrame: number;
-  isPlaying: boolean;
-}
+const HoldVectors: React.FC = () => {
+  const { holds, playbackVectors, isPlaying, currentFrame } = useContext(BoardViewContext)!;
 
-const HoldVectors: React.FC<HoldVectorsProps> = ({
-  holds,
-  playbackData,
-  currentFrame,
-  isPlaying,
-}) => {
-  // Memoize sensor readings to prevent unnecessary recalculations
-  const sensorReadings = useMemo(() => {
-    if (!playbackData || !isPlaying) return null;
-    const readings = playbackData[currentFrame];
-    if (!readings) return null;
+  // Memoize drawVectors to prevent unnecessary recalculations
+  const drawVectors = useMemo(() => {
+    if (!isPlaying || playbackVectors.length === 0) return null;
 
-    return readings.map((reading, index) => {
-      const hold = holds.find((h) => h.id === reading.hold_id);
+    return playbackVectors.map((playback, index) => {
+      const hold = holds.find((h) => h.id === playback.hold_id);
       if (!hold) return null;
 
       const [x, y, width, height] = hold.bbox;
       const centerX = x + width / 2;
       const centerY = y + height / 2;
 
-      const scale = 1.0; // Adjust scaling factor as needed
-      const endX = centerX + reading.x * scale;
-      const endY = centerY - reading.y * scale;
+      const scale = 2;
+      const vector = Array.isArray(playback.data) ? playback.data[currentFrame] : playback.data;
+      const endX = centerX + vector.x * scale;
+      const endY = centerY - vector.y * scale;
 
       return (
         <g key={`sensor-${currentFrame}-${index}`}>
@@ -40,15 +29,15 @@ const HoldVectors: React.FC<HoldVectorsProps> = ({
             x2={endX}
             y2={endY}
             stroke="red"
-            strokeWidth={4} // Thicker lines
+            strokeWidth={4}
             strokeLinecap="round"
           />
         </g>
       );
     });
-  }, [playbackData, isPlaying, currentFrame, holds]);
+  }, [playbackVectors, isPlaying, currentFrame, holds]);
 
-  return <>{sensorReadings}</>;
+  return <>{drawVectors}</>;
 };
 
 export default HoldVectors;

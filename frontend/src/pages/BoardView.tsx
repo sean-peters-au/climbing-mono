@@ -2,21 +2,21 @@ import React from 'react';
 import { Grid, Box } from '@mui/material';
 import WallImage from '../components/BoardView/WallImage';
 import { useParams } from 'react-router-dom';
-import useWall from '../hooks/useWall';
+import { useWall } from '../hooks/useWall';
 import Header from '../components/Header';
 import { BoardViewProvider } from '../components/BoardView/BoardViewContext';
 import BoardViewPanel from '../components/BoardView';
 
 const BoardView: React.FC = () => {
   const { wallId } = useParams<{ wallId: string }>();
-  const { wall, loading, error } = useWall(wallId!);
+  const { data: wall, isLoading } = useWall(wallId!);
 
-  if (loading) {
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (error || !wall) {
-    return <div>Error: {error || 'Wall not found'}</div>;
+  if (!wall) {
+    return <div>Wall not found</div>;
   }
 
   return (

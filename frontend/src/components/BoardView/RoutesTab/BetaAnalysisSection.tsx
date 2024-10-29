@@ -8,9 +8,9 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RouteRecordings from './RouteRecordings';
-import { RecordingAnalysis } from './RecordingAnalysis/RecordingAnalysis';
-import { ComparisonAnalysis } from './ComparisonAnalysis';
+import { SingleAnalysis } from './RecordingAnalysis/SingleAnalysis';
 import { BoardViewContext } from '../BoardViewContext';
+import { ComparisonAnalysis } from './RecordingAnalysis/ComparisonAnalysis';
 
 const BetaAnalysisSection: React.FC = () => {
   const { selectedRoute } = useContext(BoardViewContext)!;
@@ -55,24 +55,6 @@ const BetaAnalysisSection: React.FC = () => {
         </AccordionDetails>
       </Accordion>
 
-      {/* Summary Analysis */}
-      {selectedRecordingIds.length > 0 && (
-        <Accordion
-          expanded={expandedPanel === 'summary'}
-          onChange={handleAccordionChange('summary')}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography>Summary Analysis</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <RecordingAnalysis 
-              recordingIds={selectedRecordingIds}
-              isSummary={true}
-            />
-          </AccordionDetails>
-        </Accordion>
-      )}
-
       {/* Individual Recording Analysis */}
       {selectedRecordingIds.map((recordingId) => (
         <Accordion
@@ -84,9 +66,8 @@ const BetaAnalysisSection: React.FC = () => {
             <Typography>Recording {recordingId} Analysis</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <RecordingAnalysis 
-              recordingIds={[recordingId]}
-              isSummary={false}
+            <SingleAnalysis 
+              selectedRecordingIds={[recordingId]}
             />
           </AccordionDetails>
         </Accordion>

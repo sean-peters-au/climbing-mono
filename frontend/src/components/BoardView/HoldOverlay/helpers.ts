@@ -1,5 +1,7 @@
 // src/utils/holdUtils.ts
-import { Hold } from '../../../types';
+import { Hold, HoldAnnotationPlayback, HoldVector, Playback, PlaybackData } from '../../../types';
+
+const OVERLAY_FRAME_RATE = 100;
 
 export const generateHoldImages = (holds: Hold[]): { [key: string]: string } => {
   const images: { [key: string]: string } = {};
@@ -16,7 +18,8 @@ export const createHoldImage = (
   bbox: number[],
   mask: boolean[][]
 ): string => {
-  const [x, y, width, height] = bbox;
+  const width = bbox[2];
+  const height = bbox[3];
   const borderThickness = 2; // Define the border thickness
 
   // Expand canvas size to accommodate the border
@@ -109,17 +112,112 @@ export const createHoldImage = (
 /*
  * Returns an array of hold numbers in order of their appearance on the board
  */
-export const getHoldNumbers = (holds: Hold[]): { [key: string]: number } => {
+export const getHoldNumbers = (holds: Hold[]): HoldAnnotationPlayback[] => {
   // First sort the holds by their y-coordinate (and then x-coordinate if there are ties)
   const sortedHolds = holds.sort((a, b) => {
     if (a.bbox[1] !== b.bbox[1]) return b.bbox[1] - a.bbox[1];
     return b.bbox[0] - a.bbox[0];
   });
 
-  const holdNumbers: { [key: string]: number } = {};
+  const holdNumbers: HoldAnnotationPlayback[] = [];
   sortedHolds.forEach((hold, index) => {
-    holdNumbers[hold.id] = index + 1;
+    holdNumbers.push({
+      hold_id: hold.id,
+      frequency: 10,
+      data: {
+        annotation: index + 1,
+      },
+    });
   });
 
   return holdNumbers;
+};
+
+/*
+ * Interpolates playback data to a target frame rate
+ */
+export const interpolatePlayback = <T extends PlaybackData>(playback: Playback<T>): Playback<T> => {
+  const targetFrameRate = OVERLAY_FRAME_RATE;
+  const sourceFrameRate = playback.frequency;
+  const interpolationFactor = targetFrameRate / sourceFrameRate;
+
+  if (!Array.isArray(playback.data)) {
+    return playback;
+  }
+
+  let interpolatedData: T[];
+  if (interpolationFactor === 1) {
+    interpolatedData = playback.data;
+  } else if (interpolationFactor > 1) {
+    interpolatedData = upsamplePlayback(playback.data, interpolationFactor);
+  } else {
+    interpolatedData = downsamplePlayback(playback.data, interpolationFactor);
+  }
+
+  return {
+    hold_id: playback.hold_id,
+    frequency: targetFrameRate,
+    data: interpolatedData,
+  };
+};
+
+const upsamplePlayback = <T>(playbackData: T[], interpolationFactor: number): T[] => {
+  if (playbackData.length < 2) return playbackData;
+
+  const interpolatedData: T[] = [];
+
+  for (let i = 0; i < playbackData.length - 1; i++) {
+    const currentData = playbackData[i];
+    const nextData = playbackData[i + 1];
+
+    // Add the current vector
+    interpolatedData.push(currentData);
+
+    // Create interpolated vectors between current and next
+    for (let j = 1; j < interpolationFactor; j++) {
+      const t = j / interpolationFactor;
+      interpolatedData.push(interpolate(currentData, nextData, t));
+    }
+  }
+
+  // Add the last vector
+  interpolatedData.push(playbackData[playbackData.length - 1]);
+
+  return interpolatedData;
+};
+
+const downsamplePlayback = <T>(playbackData: T[], interpolationFactor: number): T[] => {
+  if (playbackData.length < 2) return playbackData;
+
+  const downsampledData: T[] = [];
+  const step = Math.round(1 / interpolationFactor);
+
+  for (let i = 0; i < playbackData.length; i += step) {
+    downsampledData.push(playbackData[i]);
+  }
+
+  return downsampledData;
+};
+
+const interpolate = <T>(currentData: T, nextData: T, t: number): T => {
+  if (isHoldVector(currentData) && isHoldVector(nextData)) {
+    return {
+      x: currentData.x + (nextData.x - currentData.x) * t,
+      y: currentData.y + (nextData.y - currentData.y) * t,
+    } as T;
+  } else if (isHoldAnnotation(currentData) && isHoldAnnotation(nextData)) {
+    return {
+      annotation: currentData.annotation + (nextData.annotation - currentData.annotation) * t,
+    } as T;
+  }
+  return currentData; // fallback
+};
+
+// Type guards
+const isHoldVector = (data: any): data is HoldVector => {
+  return typeof data?.x === 'number' && typeof data?.y === 'number';
+};
+
+const isHoldAnnotation = (data: any): data is { annotation: number } => {
+  return typeof data?.annotation === 'number';
 };

@@ -1,5 +1,5 @@
-import React, { createContext, useState, FC } from 'react';
-import { SensorReadingFrame, Wall, Hold, Route } from '../../types';
+import React, { createContext, useState, FC, useEffect } from 'react';
+import { Wall, Hold, Route, HoldAnnotationPlayback, HoldVectorPlayback } from '../../types';
 
 interface BoardViewContextProps {
   wall: Wall;
@@ -11,10 +11,19 @@ interface BoardViewContextProps {
   selectedHolds: string[];
   setSelectedHolds: (holds: string[]) => void;
   handleHoldClick: (holdId: string) => void;
-  playbackData: SensorReadingFrame[] | null;
-  setPlaybackData: (data: SensorReadingFrame[] | null) => void;
+  playbackVectors: HoldVectorPlayback[];
+  setPlaybackVectors: (vectors: HoldVectorPlayback[]) => void;
+  playbackAnnotations: HoldAnnotationPlayback[];
+  setPlaybackAnnotations: (annotations: HoldAnnotationPlayback[]) => void;
+  playbackFrames: number;
+  setPlaybackFrames: (frames: number) => void;
   selectedRoute: Route | null;
   setSelectedRoute: (route: Route | null) => void;
+  isPlaying: boolean;
+  setIsPlaying: (value: boolean) => void;
+  currentFrame: number;
+  setCurrentFrame: (value: number) => void;
+  frameRate: number;
 }
 
 export const BoardViewContext = createContext<BoardViewContextProps | undefined>(undefined);
@@ -28,8 +37,49 @@ export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }
   const [selectedTab, setSelectedTab] = useState<number>(0);
   const [showAllHolds, setShowAllHolds] = useState<boolean>(false);
   const [selectedHolds, setSelectedHolds] = useState<string[]>([]);
-  const [playbackData, setPlaybackData] = useState<SensorReadingFrame[] | null>(null);
+  const [playbackVectors, setPlaybackVectors] = useState<HoldVectorPlayback[]>([]);
+  const [playbackAnnotations, setPlaybackAnnotations] = useState<HoldAnnotationPlayback[]>([]);
+  const [playbackFrames, setPlaybackFrames] = useState<number>(0);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentFrame, setCurrentFrame] = useState<number>(0);
+  const frameRate = 100; // Hz
+
+  useEffect(() => {
+    let lastFrameTime = 0;
+    let animationFrameId: number;
+    const frameInterval = 1000 / frameRate; // Convert Hz to ms between frames
+
+    const animate = (timestamp: number) => {
+      if (!lastFrameTime) lastFrameTime = timestamp;
+      
+      const deltaTime = timestamp - lastFrameTime;
+      
+      if (deltaTime >= frameInterval) {
+        setCurrentFrame((prevFrame) => {
+          const newFrame = prevFrame + 1;
+          if (newFrame >= playbackFrames) {
+            setIsPlaying(false);
+            return playbackFrames;
+          }
+          return newFrame;
+        });
+        lastFrameTime = timestamp;
+      }
+
+      if (isPlaying) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+
+    if (isPlaying) {
+      animationFrameId = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [isPlaying, playbackFrames, frameRate]);
 
   const toggleShowAllHolds = () => {
     setShowAllHolds((prev) => !prev);
@@ -55,10 +105,19 @@ export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }
         selectedHolds: selectedHolds,
         setSelectedHolds,
         handleHoldClick,
-        playbackData,
-        setPlaybackData,
+        playbackVectors,
+        setPlaybackVectors,
+        playbackAnnotations,
+        setPlaybackAnnotations,
+        playbackFrames,
+        setPlaybackFrames,
         selectedRoute,
         setSelectedRoute,
+        isPlaying,
+        setIsPlaying,
+        currentFrame,
+        setCurrentFrame,
+        frameRate,
       }}
     >
       {children}

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import Plot from 'react-plotly.js';
 
 interface ComparisonAnalysisProps {
   recordingIds: string[];
