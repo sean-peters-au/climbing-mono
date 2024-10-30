@@ -36,8 +36,6 @@ export const routeQueries = {
 export const recordingQueries = {
   getRecordings: async (routeId: string): Promise<Recording[]> => {
     const response = await API.get(`/routes/${routeId}/recordings`);
-    console.log('getRecordings response', response);
-    console.log('getRecordings response.data', response.data);
     return response.data.recordings;
   },
   
@@ -48,10 +46,6 @@ export const recordingQueries = {
   
   getAnalysis: async (recordingIds: string[]): Promise<AnalysisData> => {
     const response = await API.post('/recording/analysis', { recording_ids: recordingIds });
-    console.log('response headers', response.headers);
-    console.log('response', response);
-    console.log('response.data', response.data);
-    console.log('response.data.analysis_results', response.data.analysis_results);
     return response.data.analysis_results;
   }
 };

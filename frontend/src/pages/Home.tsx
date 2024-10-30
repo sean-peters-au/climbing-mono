@@ -37,7 +37,7 @@ const Home: React.FC = () => {
           <Button
             variant="contained"
             size="large"
-            onClick={() => navigate("/boards/create")}
+            onClick={() => navigate("/walls/new")}
             sx={{
               fontSize: '2rem',
               textTransform: 'none',

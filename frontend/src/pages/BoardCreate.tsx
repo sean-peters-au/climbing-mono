@@ -1,13 +1,21 @@
-// src/components/WallCreate.tsx
-import React, { useState } from 'react';
-import API from '../services/api';
-import { useNavigate } from 'react-router-dom';
-import ImageAnnotator from '../components/ImageAnnotator';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Grid,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  CircularProgress,
+} from "@mui/material";
+import API from "../services/api";
+import ImageAnnotator from "../components/ImageAnnotator";
+import Header from "../components/Header";
 
 type Point = [number, number];
 
 const BoardCreate: React.FC = () => {
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [annotations, setAnnotations] = useState<Point[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +32,7 @@ const BoardCreate: React.FC = () => {
 
     if (!imageFile || annotations.length < 3) {
       alert(
-        'Please upload an image and annotate at least three points to define the board.',
+        "Please upload an image and annotate at least three points to define the board."
       );
       return;
     }
@@ -34,18 +42,18 @@ const BoardCreate: React.FC = () => {
     const reader = new FileReader();
     reader.readAsDataURL(imageFile);
     reader.onloadend = async () => {
-      const base64Image = reader.result?.toString().split(',')[1];
+      const base64Image = reader.result?.toString().split(",")[1];
 
       try {
-        await API.post('/wall', {
+        await API.post("/wall", {
           name,
           image: base64Image,
           wall_annotations: annotations,
         });
 
-        navigate('/');
+        navigate("/");
       } catch (error) {
-        console.error('Error creating wall:', error);
+        console.error("Error creating board:", error);
       } finally {
         setIsLoading(false);
       }
@@ -57,47 +65,74 @@ const BoardCreate: React.FC = () => {
   };
 
   return (
-    <div className="board-create">
-      <h1>Create New Board</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Board Name:</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>Board Image:</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            required
-          />
-        </div>
-        {imageFile && (
-          <div>
-            <p>
-              Click on the image to annotate the boards's polygon. Click "Finish Annotation" when done.
-            </p>
-            <ImageAnnotator
-              imageFile={imageFile}
-              annotations={annotations}
-              setAnnotations={setAnnotations}
-            />
-            <p>{annotations.length} point(s) added.</p>
-            <button type="button" onClick={handleResetAnnotations}>
-              Reset Annotations
-            </button>
-          </div>
-        )}
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Creating Board...' : 'Create Board'}
-        </button>
-      </form>
-    </div>
+    <>
+      <Header />
+      <Box sx={{ padding: 4 }}>
+        <Typography variant="h1" gutterBottom>
+          Create New Board
+        </Typography>
+        <form onSubmit={handleSubmit}>
+          <Grid container spacing={4}>
+            <Grid item xs={12}>
+              <TextField
+                label="Board Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Button variant="contained" component="label">
+                Upload Board Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  hidden
+                  required
+                />
+              </Button>
+            </Grid>
+            {imageFile && (
+              <>
+                <Grid item xs={12}>
+                  <Typography variant="body1">
+                    Click on the image to annotate the board's polygon. Click
+                    "Finish Annotation" when done.
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <ImageAnnotator
+                    imageFile={imageFile}
+                    annotations={annotations}
+                    setAnnotations={setAnnotations}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2">
+                    {annotations.length} point(s) added.
+                  </Typography>
+                  <Button variant="outlined" onClick={handleResetAnnotations}>
+                    Reset Annotations
+                  </Button>
+                </Grid>
+              </>
+            )}
+            <Grid item xs={12}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={isLoading}
+                startIcon={isLoading ? <CircularProgress size={20} /> : null}
+              >
+                {isLoading ? "Creating Board..." : "Create Board"}
+              </Button>
+            </Grid>
+          </Grid>
+        </form>
+      </Box>
+    </>
   );
 };
 

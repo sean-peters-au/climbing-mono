@@ -4,20 +4,22 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+pillow = "*"
+requests = "*"
 flask = "*"
-mongoengine = "*"
 numpy = "*"
-opencv-python = "*"
-torch = "*"
-torchvision = "*"
 boto3 = "*"
 flask-cors = "*"
 marshmallow = "*"
 plotly = "*"
+sqlalchemy = "*"
+psycopg2-binary = "*"
+pandas = "*"
 
 [dev-packages]
 setuptools = "*"
 wheel = "*"
+alembic = "*"
 
 [requires]
 python_version = "3.9"

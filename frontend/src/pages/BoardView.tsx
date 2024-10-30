@@ -10,6 +10,7 @@ import BoardViewPanel from '../components/BoardView';
 const BoardView: React.FC = () => {
   const { wallId } = useParams<{ wallId: string }>();
   const { data: wall, isLoading } = useWall(wallId!);
+  console.log(wall);
 
   if (isLoading) {
     return <div>Loading...</div>;

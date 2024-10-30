@@ -41,6 +41,14 @@ services:
     env_file:
       - ./image-processing-service/.env
 
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
   mongo:
     container_name: climbing-mongo
     image: mongo:latest

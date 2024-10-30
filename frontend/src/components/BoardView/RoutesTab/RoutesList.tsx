@@ -41,7 +41,7 @@ const RoutesList: React.FC<RoutesListProps> = ({
     return <CircularProgress />;
   }
 
-  if (!routes || routes.length === 0) {
+  if (!routes) {
     return <Typography>No routes found.</Typography>;
   }
 
