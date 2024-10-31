@@ -5,7 +5,7 @@ export interface Point {
 
 export interface Hold {
   id: string;
-  bbox: number[]; // [x, y, width, height]
+  bbox: number[]; // [x_min, y_min, width, height]
   centroid_x: number;
   centroid_y: number;
   mask: boolean[][]; // 2D array representing the hold mask
@@ -110,4 +110,9 @@ export interface KeyMetrics {
 export interface PlotData {
   data: Plotly.Data[];
   layout: Partial<Plotly.Layout>;
+}
+
+export interface DrawnData {
+  bbox: number[]; // [x_min, y_min, width, height]
+  mask: boolean[][];
 }

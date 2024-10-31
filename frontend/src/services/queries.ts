@@ -18,7 +18,22 @@ export const wallQueries = {
   getWall: async (id: string): Promise<Wall> => {
     const response = await API.get(`/wall/${id}`);
     return response.data;
-  }
+  },
+
+  deleteHold: async (wallId: string, holdId: string): Promise<void> => {
+    await API.delete(`/wall/${wallId}/hold/${holdId}`);
+  },
+
+  addHold: async (
+    wallId: string,
+    holdData: { bbox: number[]; mask: boolean[][] }
+  ): Promise<void> => {
+    const tempfix = {
+      ...holdData,
+      mask: holdData.mask.map((row) => row.map((cell) => cell ? 1 : 0)),
+    };
+    await API.post(`/wall/${wallId}/hold`, tempfix);
+  },
 };
 
 export const routeQueries = {

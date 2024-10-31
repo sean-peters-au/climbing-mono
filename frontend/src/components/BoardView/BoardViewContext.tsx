@@ -1,5 +1,5 @@
 import React, { createContext, useState, FC, useEffect } from 'react';
-import { Wall, Hold, Route, HoldAnnotationPlayback, HoldVectorPlayback } from '../../types';
+import { Wall, Hold, Route, HoldAnnotationPlayback, HoldVectorPlayback, DrawnData } from '../../types';
 
 interface BoardViewContextProps {
   wall: Wall;
@@ -24,6 +24,10 @@ interface BoardViewContextProps {
   currentFrame: number;
   setCurrentFrame: (value: number) => void;
   frameRate: number;
+  isDrawing: boolean;
+  setIsDrawing: (value: boolean) => void;
+  drawnData: DrawnData | null;
+  setDrawnData: (data: DrawnData | null) => void;
 }
 
 export const BoardViewContext = createContext<BoardViewContextProps | undefined>(undefined);
@@ -44,6 +48,8 @@ export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentFrame, setCurrentFrame] = useState<number>(0);
   const frameRate = 100; // Hz
+  const [isDrawing, setIsDrawing] = useState<boolean>(false);
+  const [drawnData, setDrawnData] = useState<DrawnData | null>(null);
 
   useEffect(() => {
     let lastFrameTime = 0;
@@ -118,6 +124,10 @@ export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }
         currentFrame,
         setCurrentFrame,
         frameRate,
+        isDrawing,
+        setIsDrawing,
+        drawnData,
+        setDrawnData,
       }}
     >
       {children}

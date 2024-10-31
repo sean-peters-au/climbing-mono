@@ -51,31 +51,61 @@ def register_wall(name: str, image: PIL.Image.Image, board_annotations: list):
 
     return wall_model.id
 
-def add_hold_to_wall(id, x, y):
-    wall_model = wall_dao.WallDAO.get_wall_by_id(id)
+def add_hold_to_wall(
+    wall_id: str,
+    bbox: typing.List[int],
+    mask: typing.List[typing.List[int]]
+) -> holds_model.HoldModel:
+    """
+    Add a hold to a wall with a pre-supplied mask.
+
+    Args:
+        wall_id (str): The ID of the wall.
+        bbox (List[int]): The bounding box of the hold [x_min, y_min, x_max, y_max].
+        mask (List[List[int]]): The mask of the hold.
+
+    Returns:
+        HoldModel: The added hold model.
+    """
+    wall_model = wall_dao.WallDAO.get_wall_by_id(int(wall_id))
     if not wall_model:
-        raise ValueError("Wall with given ID does not exist.")
+        raise ValueError("Wall with the given ID does not exist.")
 
-    image_url = flask.current_app.extensions['s3'].get_file_url(str(wall_model.image_id))
-
-    # get the hold from the image processing service
-    segment = flask.current_app.extensions['image_processing'].segment_hold(
-        image=image_url,
-        x=x,
-        y=y,
+    # Create the hold model
+    hold_model = holds_model.HoldModel(
+        bbox=bbox,
+        mask=mask
     )
+    hold_dao.HoldDAO.save_hold(hold_model)
 
-    # create the hold
-    hold = holds_model.create_hold(segment)
-
-    # add the hold to the wall
-    wall_model.holds.append(hold)
+    # Add the hold to the wall
+    wall_model.holds.append(hold_model)
     wall_dao.WallDAO.update_wall(wall_model)
 
-    return hold
+    return hold_model
 
-def delete_hold_from_wall(id, hold_id):
-    raise NotImplementedError("Not implemented")
+def delete_hold_from_wall(wall_id: str, hold_id: str) -> None:
+    """
+    Delete a hold from a wall.
+
+    Args:
+        wall_id (str): The ID of the wall.
+        hold_id (str): The ID of the hold to delete.
+    """
+    wall_model = wall_dao.WallDAO.get_wall_by_id(int(wall_id))
+    if not wall_model:
+        raise ValueError("Wall with the given ID does not exist.")
+
+    hold = next((h for h in wall_model.holds if h.id == hold_id), None)
+    if not hold:
+        raise ValueError("Hold with the given ID does not exist on the wall.")
+
+    # Remove the hold from the wall
+    wall_model.holds.remove(hold)
+    wall_dao.WallDAO.update_wall(wall_model)
+
+    # Delete the hold from the database
+    hold_dao.HoldDAO.delete_hold(int(hold_id))
 
 def get_walls():
     walls = wall_dao.WallDAO.get_all_walls()

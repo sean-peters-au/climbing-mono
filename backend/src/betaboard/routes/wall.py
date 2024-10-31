@@ -50,40 +50,59 @@ def get_wall(id):
 
 @wall_bp.route('/wall/<id>/hold', methods=['POST'])
 def add_hold_to_wall(id):
+    """
+    Add a hold to a wall with a pre-supplied mask.
 
+    Args:
+        id (str): The ID of the wall.
+
+    Returns:
+        Response: JSON response with the added hold.
+    """
     class HoldSchema(marshmallow.Schema):
-        x = marshmallow.fields.Int(required=True)
-        y = marshmallow.fields.Int(required=True)
+        bbox = marshmallow.fields.List(
+            marshmallow.fields.Int(),
+            required=True,
+            validate=marshmallow.validate.Length(equal=4)
+        )
+        mask = marshmallow.fields.List(
+            marshmallow.fields.List(marshmallow.fields.Int()),
+            required=True
+        )
 
     try:
-        data = HoldSchema().load(flask.request.json)
+        data = HoldSchema().load(flask.request.get_json())
     except marshmallow.exceptions.ValidationError as err:
-        return flask.jsonify(err.messages), 400
+        return flask.jsonify(err.messages), http.HTTPStatus.BAD_REQUEST
 
-    x = flask.request.json['x']
-    y = flask.request.json['y']
-
-    hold = wall_logic.add_hold_to_wall(id, x, y)
-
-    return flask.jsonify({
-        'hold': hold,
-    }), http.HTTPStatus.OK
-
-@wall_bp.route('/wall/<id>/hold', methods=['DELETE'])
-def delete_hold_from_wall(id):
-    class HoldSchema(marshmallow.Schema):
-        hold_id = marshmallow.fields.Str(required=True)
+    bbox = data['bbox']
+    mask = data['mask']
 
     try:
-        data = HoldSchema().load(flask.request.json)
-    except marshmallow.exceptions.ValidationError as err:
-        return flask.jsonify(err.messages), 400
+        hold = wall_logic.add_hold_to_wall(id, bbox, mask)
+    except ValueError as err:
+        return flask.jsonify({'error': str(err)}), http.HTTPStatus.BAD_REQUEST
 
-    hold_id = data['hold_id']
+    return flask.jsonify(hold.asdict()), http.HTTPStatus.CREATED
 
-    wall_logic.delete_hold_from_wall(id, hold_id)
+@wall_bp.route('/wall/<id>/hold/<hold_id>', methods=['DELETE'])
+def delete_hold_from_wall(id, hold_id):
+    """
+    Delete a hold from a wall.
 
-    return flask.jsonify({}), http.HTTPStatus.NO_CONTENT
+    Args:
+        id (str): The ID of the wall.
+        hold_id (str): The ID of the hold to delete.
+
+    Returns:
+        Response: Empty response with HTTP 204 status.
+    """
+    try:
+        wall_logic.delete_hold_from_wall(id, hold_id)
+    except ValueError as err:
+        return flask.jsonify({'error': str(err)}), http.HTTPStatus.NOT_FOUND
+
+    return '', http.HTTPStatus.NO_CONTENT
 
 @wall_bp.route('/wall/<id>/update_image', methods=['POST'])
 def update_wall_image(id):

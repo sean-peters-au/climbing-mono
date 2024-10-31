@@ -65,10 +65,17 @@ class WallDAO:
     def update_wall(
         wall_model: walls_model.WallModel,
         session: sqlalchemy.orm.Session
-    ):
+    ) -> None:
+        """
+        Update a wall's details in the database.
+
+        Args:
+            wall_model (WallModel): The wall model with updated data.
+            session (Session): The database session.
+        """
         wall = session.query(wall_schema.WallSchema) \
             .options(*WallDAO._load_relationships()) \
-            .get(wall_model.id)
+            .get(int(wall_model.id))
 
         if wall is None:
             raise ValueError("Wall with given ID does not exist.")
@@ -78,7 +85,7 @@ class WallDAO:
         wall.width = wall_model.width
         wall.image_id = wall_model.image_id
 
-        # Update holds
+        # Update holds association
         hold_ids = [int(hold.id) for hold in wall_model.holds if hold.id]
         wall.holds = session.query(hold_schema.HoldSchema) \
             .filter(hold_schema.HoldSchema.id.in_(hold_ids)) \

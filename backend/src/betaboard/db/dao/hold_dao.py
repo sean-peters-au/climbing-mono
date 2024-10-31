@@ -59,3 +59,20 @@ class HoldDAO:
         session.add(hold)
         session.flush()
         hold_model.id = str(hold.id)
+
+    @staticmethod
+    @base_dao.with_session
+    def delete_hold(hold_id: int, session: sqlalchemy.orm.Session) -> None:
+        """
+        Delete a hold by its ID.
+
+        Args:
+            hold_id (int): The ID of the hold to delete.
+            session (Session): The database session.
+        """
+        hold = session.query(hold_schema.HoldSchema).get(hold_id)
+        if hold is None:
+            raise ValueError("Hold with the given ID does not exist.")
+
+        session.delete(hold)
+        session.flush()

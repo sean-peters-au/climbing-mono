@@ -4,9 +4,9 @@ import typing
 import numpy as np
 
 import betaboard.business.models.recordings as recordings_model
-import betaboard.business.logic.route as route_logic
 import betaboard.db.dao.recording_dao as recording_dao
 import betaboard.db.dao.route_dao as route_dao
+import betaboard.db.dao.hold_dao as hold_dao
 
 def create_recording(
     start_time: datetime.datetime,
@@ -85,24 +85,47 @@ def _simulate_hold_data(duration, sample_rate):
     return hold_data
 
 def _simulate_recording(start_time: datetime.datetime, end_time: datetime.datetime, hold_ids: typing.List[str], sample_rate=10):
-    duration = (end_time - start_time).total_seconds()
-    num_samples = int(duration * sample_rate)
+    holds = hold_dao.HoldDAO.get_holds_by_ids(hold_ids)
 
     sensor_reading_frames = []
 
-    num_holds = len(hold_ids)
     hold_timings = []
     current_time = 0.0
 
-    # Determine when each hold is grabbed and released
-    # Holds are used in order, overlapping to maintain 3-4 holds at a time
-    for hold_index in range(num_holds):
-        # Each hold is held for a random duration between 2 to 5 seconds
-        hold_duration = np.random.uniform(2, 5)
+    # Start with the lowest hold
+    holds_dict = {hold.id: hold for hold in holds}
+    first_hold_id = max(hold_ids, key=lambda hold_id: holds_dict[hold_id].bbox[1])
+    ordered_holds = [first_hold_id]
+    remaining_holds = set(hold_ids) - {first_hold_id}
+
+    # Helper function to calculate distance between holds
+    def get_hold_distance(hold1_id: str, hold2_id: str) -> float:
+        hold1 = holds_dict[hold1_id]
+        hold2 = holds_dict[hold2_id]
+        # Using center points of holds for distance calculation
+        x1 = hold1.bbox[0] + hold1.bbox[2] / 2
+        y1 = hold1.bbox[1] + hold1.bbox[3] / 2
+        x2 = hold2.bbox[0] + hold2.bbox[2] / 2
+        y2 = hold2.bbox[1] + hold2.bbox[3] / 2
+        return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+
+    # Order remaining holds by distance from the last added hold
+    while remaining_holds:
+        last_hold = ordered_holds[-1]
+        next_hold = min(
+            remaining_holds,
+            key=lambda hold_id: get_hold_distance(last_hold, hold_id)
+        )
+        ordered_holds.append(next_hold)
+        remaining_holds.remove(next_hold)
+
+    # Use ordered_holds for timing simulation
+    for hold_index in range(len(ordered_holds)):
+        hold_duration = np.random.uniform(0.5, 2)
         hold_start_time = current_time
         hold_end_time = hold_start_time + hold_duration
-        hold_timings.append((hold_ids[hold_index], hold_start_time, hold_end_time))
-        current_time += np.random.uniform(1, 3)  # Time before grabbing next hold
+        hold_timings.append((ordered_holds[hold_index], hold_start_time, hold_end_time))
+        current_time += np.random.uniform(0.5, 1.5)  # Time before grabbing next hold
 
     # Ensure total duration is covered
     max_time = max(end_time.timestamp(), current_time)

@@ -1,13 +1,20 @@
 import React, { useContext, useState } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Box, Typography } from '@mui/material';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  Typography,
+} from '@mui/material';
 import { BoardViewContext } from '../BoardViewContext';
-import BetaAnalysisSection from '../RoutesTab/BetaAnalysisSection';
-import RoutesSection from '../RoutesTab/RoutesSection';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DeleteHolds from './DeleteHolds';
+import ShowAllHolds from './ShowAllHolds';
+import AddDrawnHold from './AddDrawnHold';
 
-type BoardPanelProps = {};
+type BoardTabProps = {};
 
-const BoardPanel: React.FC<BoardPanelProps> = () => {
+const BoardTab: React.FC<BoardTabProps> = () => {
   const { wall } = useContext(BoardViewContext)!;
   const [expanded, setExpanded] = useState<string | false>('general');
 
@@ -31,20 +38,26 @@ const BoardPanel: React.FC<BoardPanelProps> = () => {
         </AccordionDetails>
       </Accordion>
 
-      {/* Holds */}
+      {/* Hold Management */}
       <Accordion
-        expanded={expanded === 'beta'}
-        onChange={handleAccordionChange('beta')}
+        expanded={expanded === 'holds'}
+        onChange={handleAccordionChange('holds')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography sx={{ fontSize: '1.5rem' }}>Holds</Typography>
+          <Typography sx={{ fontSize: '1.5rem' }}>Hold Management</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <Typography variant="body1">TODO</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '1' }}>
+            <ShowAllHolds />
+            <AddDrawnHold />
+            <DeleteHolds />
+          </Box>
         </AccordionDetails>
       </Accordion>
+
+      {/* Other accordions can be added here */}
     </Box>
   );
 };
 
-export default BoardPanel;
+export default BoardTab;
