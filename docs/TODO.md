@@ -6,10 +6,12 @@
 
 ## Holds & Image Recognition
 
-- Add ability to remove holds
+- Hold highlighting should just be a border
+- Show all holds should set selected holds to []
+- Selecting a route should clear selected holds
+- In general hold selection clearing needs to be a more consistent experience
+- Improve Hold Management UI/UX
 - Fine-tuning to improve model performance?
-- Add fallback: Draw the hold
-- Add fallback: Select all the points where the AI missed (to help AI for second pass)
 
 ## Route Analytics
 
@@ -25,6 +27,10 @@
 - Add edits
 - Add delete
 
+# Sensors
+
+- Add mechanism to add a sensor to a hold
+
 # Code
 
 - Better error handling
@@ -36,3 +42,6 @@
 - Camera
 - Skeletal frame recognition
 - Incorporate into recording analysis
+- Add fallback: Select all the points where the AI missed (to help AI for second pass)
+
+# 3D board

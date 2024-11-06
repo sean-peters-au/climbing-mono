@@ -1,0 +1,13 @@
+[Unit]
+Description=FFmpeg Video Recording Service
+After=multi-user.target
+
+[Service]
+Type=simple
+User=pi
+ExecStart=/home/pi/scripts/ffmpeg-record.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
