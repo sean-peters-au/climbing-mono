@@ -1,8 +1,8 @@
 # Hold Metrics
 
-The intention is to capture a variety of load sensors behind a climbing hold and use that to visualise the forces a climber places on holds while climbing.
+This was an initial proof of concept for capturing and visualising load sensor data
 
-Right now it just lets you configure, zero, calibrate and visualise 1D force on N load sensors.
+It lets you configure, zero, calibrate and visualise 1D force on N load sensors.
 
 ### Instructions
 
