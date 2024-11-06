@@ -19,3 +19,7 @@ class Config:
     POSTGRES = {
         'URI': os.environ.get('POSTGRES_URI'),
     }
+
+    CAMERA_SERVICE = {
+        'url': os.environ.get('CAMERA_SERVICE_HOST'),
+    }
