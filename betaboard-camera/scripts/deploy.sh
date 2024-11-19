@@ -1,5 +1,7 @@
 #!/bin/bash
 
+DEPLOY_DIR=/opt/betaboard-camera
+
 set -e
 
 # Function for deploy messages

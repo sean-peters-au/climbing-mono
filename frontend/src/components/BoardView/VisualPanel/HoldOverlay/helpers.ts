@@ -1,5 +1,5 @@
 // src/utils/holdUtils.ts
-import { Hold, HoldAnnotationPlayback, HoldVector, Playback, PlaybackData } from '../../../types';
+import { Hold, HoldAnnotationPlayback, HoldVector, Playback, PlaybackData } from '../../../../types';
 
 const OVERLAY_FRAME_RATE = 100;
 

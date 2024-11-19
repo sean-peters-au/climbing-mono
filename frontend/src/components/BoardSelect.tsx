@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TextField, Autocomplete } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import API from '../services/api';
+import API from '../services/betaboard-backend/api';
 import { Wall } from '../types'; // Corrected import
 
 const BoardSelect: React.FC = () => {

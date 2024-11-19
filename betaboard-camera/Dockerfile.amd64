@@ -1,6 +1,6 @@
-FROM arm32v6/alpine:3.18
+FROM alpine:3.18
 
-# Install Python and system dependencies
+# Same as ARM but without arm-specific packages
 RUN apk add --no-cache \
     python3 \
     py3-pip \
@@ -20,14 +20,7 @@ RUN apk add --no-cache \
     ninja \
     patchelf \
     jpeg-dev \
-    zlib-dev \
-    freetype-dev \
-    lcms2-dev \
-    openjpeg-dev \
-    tiff-dev \
-    harfbuzz-dev \
-    fribidi-dev \
-    libpng-dev
+    zlib-dev
 
 WORKDIR /app
 

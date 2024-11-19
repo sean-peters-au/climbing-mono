@@ -1,0 +1,1 @@
+export const STREAM_URL = process.env.REACT_APP_CAMERA_STREAM_URL 

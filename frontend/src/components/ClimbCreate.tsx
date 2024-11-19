@@ -7,7 +7,7 @@ import {
   Box,
   InputAdornment,
 } from '@mui/material';
-import API from '../services/api';
+import API from '../services/betaboard-backend/api';
 
 interface Props {
   wallId: string;

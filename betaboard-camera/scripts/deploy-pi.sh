@@ -1,5 +1,7 @@
 #!/bin/bash
 
+DEPLOY_DIR=/opt/betaboard-camera
+
 set -e
 
 # Function for deploy messages
@@ -9,8 +11,10 @@ deploy_msg() {
 
 # Load environment variables
 set -a
-source /home/pi/betaboard-camera/.env
+source $DEPLOY_DIR/.env
 set +a
+
+mkdir -p $DEPLOY_DIR/videos
 
 deploy_msg "Setting up FFmpeg recording service"
 sudo cp $DEPLOY_DIR/scripts/ffmpeg-record.service /etc/systemd/system/

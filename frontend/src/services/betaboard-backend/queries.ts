@@ -1,5 +1,5 @@
 import API from './api';
-import { Wall, Route, Recording, AnalysisData } from '../types';
+import { Wall, Route, Recording, AnalysisData } from '../../types';
 
 export type CreateRouteBody = {
   name: string;

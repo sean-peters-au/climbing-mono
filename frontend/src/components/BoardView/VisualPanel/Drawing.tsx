@@ -1,7 +1,7 @@
 import React, { useContext, useRef, useEffect } from 'react';
 import Simplify from 'simplify-js';
-import { BoardViewContext } from './BoardViewContext';
-import { Point } from '../../types';
+import { BoardViewContext } from '../BoardViewContext';
+import { Point } from '../../../types';
 
 const Drawing: React.FC = () => {
   const { isDrawing, wall, setDrawnData } = useContext(BoardViewContext)!;

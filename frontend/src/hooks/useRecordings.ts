@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { recordingQueries } from "../services/queries";
+import { recordingQueries } from "../services/betaboard-backend/queries";
 
 export const useRecordings = (routeId: string) => {
   return useQuery({

@@ -1,3 +1,5 @@
+export type VisualMode = '2D' | '3D' | 'Video';
+
 export interface Point {
   x: number;
   y: number;

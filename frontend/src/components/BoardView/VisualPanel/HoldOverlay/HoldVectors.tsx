@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { BoardViewContext } from '../BoardViewContext';
+import { BoardViewContext } from '../../BoardViewContext';
 
 const HoldVectors: React.FC = () => {
   const { holds, playbackVectors, isPlaying, currentFrame } = useContext(BoardViewContext)!;

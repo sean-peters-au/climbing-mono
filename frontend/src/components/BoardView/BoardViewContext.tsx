@@ -1,11 +1,13 @@
 import React, { createContext, useState, FC, useEffect } from 'react';
-import { Wall, Hold, Route, HoldAnnotationPlayback, HoldVectorPlayback, DrawnData } from '../../types';
+import { Wall, Hold, Route, HoldAnnotationPlayback, HoldVectorPlayback, DrawnData, VisualMode } from '../../types';
 
 interface BoardViewContextProps {
   wall: Wall;
   holds: Hold[];
   selectedTab: number;
   setSelectedTab: (tab: number) => void;
+  visualMode: VisualMode;
+  setVisualMode: (mode: VisualMode) => void;
   showAllHolds: boolean;
   toggleShowAllHolds: () => void;
   selectedHolds: string[];
@@ -39,6 +41,7 @@ interface BoardViewProviderProps {
 
 export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }) => {
   const [selectedTab, setSelectedTab] = useState<number>(0);
+  const [visualMode, setVisualMode] = useState<VisualMode>('2D');
   const [showAllHolds, setShowAllHolds] = useState<boolean>(false);
   const [selectedHolds, setSelectedHolds] = useState<string[]>([]);
   const [playbackVectors, setPlaybackVectors] = useState<HoldVectorPlayback[]>([]);
@@ -106,6 +109,8 @@ export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }
         holds: wall.holds,
         selectedTab,
         setSelectedTab,
+        visualMode,
+        setVisualMode,
         showAllHolds,
         toggleShowAllHolds,
         selectedHolds: selectedHolds,

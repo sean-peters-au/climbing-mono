@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { wallQueries } from "../services/queries";
+import { wallQueries } from "../services/betaboard-backend/queries";
 
 export const useWall = (id: string | undefined) => {
   return useQuery({

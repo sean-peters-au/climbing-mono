@@ -25,6 +25,7 @@ class RecordingSchema(base_schema.BaseSchema):
     start_time = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)
     end_time = sqlalchemy.Column(sqlalchemy.DateTime)
     frequency = sqlalchemy.Column(sqlalchemy.Float, default=100.0)
+    video_s3_key = sqlalchemy.Column(sqlalchemy.String, nullable=True)
 
     # Relationships
     route = sqlalchemy.orm.relationship('RouteSchema', back_populates='recordings')

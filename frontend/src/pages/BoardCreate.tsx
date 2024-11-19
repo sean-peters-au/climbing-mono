@@ -8,7 +8,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import API from "../services/api";
+import API from "../services/betaboard-backend/api";
 import ImageAnnotator from "../components/ImageAnnotator";
 import Header from "../components/Header";
 

@@ -27,7 +27,6 @@ services:
     env_file:
       - ./backend/.env
     depends_on:
-      - mongo
       - image-processing-service
 
   image-processing-service:
@@ -49,22 +48,17 @@ services:
     ports:
       - "5432:5432"
 
-  mongo:
-    container_name: climbing-mongo
-    image: mongo:latest
-    user: "999:999"
-    ports:
-      - "27018:27017"
-    volumes:
-      - mongo-data:/data/db
-    command: >
-      --wiredTigerCacheSizeGB 1
-      --setParameter diagnosticDataCollectionEnabled=false
-    deploy:
-      resources:
-        limits:
-          memory: 2G
+  # betaboard-camera:
+  #   build:
+  #     context: ./betaboard-camera
+  #     dockerfile: Dockerfile.amd64
+  #   volumes:
+  #     - ./betaboard-camera:/app
+  #     - ./betaboard-camera/static/videos:/opt/betaboard-camera/videos
+  #   ports:
+  #     - "8000:8000"
+  #   env_file:
+  #     - ./betaboard-camera/.env
 
 volumes:
-  mongo-data:
   model-cache:  # Add this volume

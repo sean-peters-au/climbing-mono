@@ -1,16 +1,16 @@
 import React from 'react';
 import { Grid, Box } from '@mui/material';
-import WallImage from '../components/BoardView/WallImage';
+import WallImage from '../components/BoardView/VisualPanel/WallImage';
 import { useParams } from 'react-router-dom';
 import { useWall } from '../hooks/useWall';
 import Header from '../components/Header';
 import { BoardViewProvider } from '../components/BoardView/BoardViewContext';
 import BoardViewPanel from '../components/BoardView';
+import VisualModeSelect from '../components/BoardView/VisualPanel/VisualModeSelect';
 
 const BoardView: React.FC = () => {
   const { wallId } = useParams<{ wallId: string }>();
   const { data: wall, isLoading } = useWall(wallId!);
-  console.log(wall);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -37,6 +37,7 @@ const BoardView: React.FC = () => {
                 margin: 2,
               }}
             >
+              <VisualModeSelect />
               <WallImage />
             </Box>
           </Grid>

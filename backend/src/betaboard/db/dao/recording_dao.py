@@ -32,6 +32,7 @@ class RecordingDAO:
             start_time=recording.start_time,
             end_time=recording.end_time,
             sensor_readings=sensor_readings,
+            video_s3_key=recording.video_s3_key
         )
 
     @staticmethod
@@ -77,6 +78,7 @@ class RecordingDAO:
             route_id=recording_model.route_id,
             start_time=recording_model.start_time,
             end_time=recording_model.end_time,
+            video_s3_key=recording_model.video_s3_key,
         )
         session.add(recording)
         session.flush()  # Get the recording ID

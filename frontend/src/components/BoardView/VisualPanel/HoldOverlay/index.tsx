@@ -1,8 +1,8 @@
 import React, { useContext, useMemo } from 'react';
-import { Point } from '../../../types';
+import { Point } from '../../../../types';
 import HoldHighlights from './HoldHighlights';
 import HoldVectors from './HoldVectors';
-import { BoardViewContext } from '../BoardViewContext';
+import { BoardViewContext } from '../../BoardViewContext';
 import { HoldAnnotations } from './HoldAnnotations';
 
 interface HoldOverlayProps {
@@ -46,6 +46,7 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
         width: '100%',
         height: '100%',
         cursor: missingHoldMode ? 'crosshair' : 'default',
+        pointerEvents: 'none',
       }}
       onClick={handleOverlayClick}
     >

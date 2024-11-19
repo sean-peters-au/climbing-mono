@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { BoardViewContext } from '../BoardViewContext';
+import { BoardViewContext } from '../../BoardViewContext';
 
 export const HoldAnnotations: React.FC = () => {
   const { holds, playbackAnnotations, isPlaying, currentFrame } = useContext(BoardViewContext)!;

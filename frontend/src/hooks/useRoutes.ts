@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { CreateRouteBody, routeQueries } from "../services/queries";
+import { CreateRouteBody, routeQueries } from "../services/betaboard-backend/queries";
 
 export const useRoutes = (wallId: string) => {
   return useQuery({

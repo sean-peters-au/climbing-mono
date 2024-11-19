@@ -1,7 +1,9 @@
 import datetime
+import io
 import typing
 
 import numpy as np
+import flask
 
 import betaboard.business.models.recordings as recordings_model
 import betaboard.db.dao.recording_dao as recording_dao
@@ -13,13 +15,37 @@ def create_recording(
     end_time: datetime.datetime,
     route_id: str
 ) -> recordings_model.RecordingModel:
-    route_model = route_dao.RouteDAO.get_route_by_id(route_id)
+    """
+    Creates a new recording for a route.
 
+    :param start_time: The start time of the recording.
+    :param end_time: The end time of the recording.
+    :param route_id: The ID of the route.
+    :return: The created recording model.
+    """
+    route_model = route_dao.RouteDAO.get_route_by_id(route_id)
     hold_ids = [hold.id for hold in route_model.holds]
 
     # Simulate the recording data
     sensor_reading_frames = _simulate_recording(start_time, end_time, hold_ids)
 
+    # Get the camera service client and S3 client
+    camera_client = flask.current_app.extensions['camera_service']
+    s3_client = flask.current_app.extensions['s3']
+
+    # Fetch video from camera service
+    start_timestamp = int(start_time.timestamp())
+    end_timestamp = int(end_time.timestamp())
+
+    video_data = camera_client.get_video(start=start_timestamp, end=end_timestamp)
+
+    # Upload video to S3
+    video_file = io.BytesIO(video_data)
+    s3_key = s3_client.upload_file(video_file)
+    print(f"Uploaded video to S3 with key: {s3_key}")
+    print(f"Video url: {s3_client.get_presigned_url(s3_key)}")
+
+    # Create the recording model
     recording_model = recordings_model.RecordingModel(
         id=None,
         route_id=route_id,
@@ -36,8 +62,10 @@ def create_recording(
             ]
             for frame in sensor_reading_frames
         ],
+        video_s3_key=s3_key
     )
 
+    # Save the recording
     recording_dao.RecordingDAO.save_recording(recording_model)
 
     return recording_model

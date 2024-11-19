@@ -9,7 +9,7 @@ import Plot from 'react-plotly.js';
 import { BoardViewContext } from '../../BoardViewContext';
 import { useRecordingsAnalysis } from '../../../../hooks/useRecordings';
 import { QueryError } from '../../../QueryError';
-import { interpolatePlayback } from '../../HoldOverlay/helpers';
+import { interpolatePlayback } from '../../VisualPanel/HoldOverlay/helpers';
 import { KeyMetrics } from './KeyMetrics';
 import { HoldAnnotationPlayback, HoldVectorPlayback } from '../../../../types';
 
