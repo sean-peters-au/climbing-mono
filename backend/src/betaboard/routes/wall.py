@@ -161,6 +161,41 @@ def add_route_to_wall(id):
         'route_id': str(route.id),
     }), http.HTTPStatus.CREATED
 
+@wall_bp.route('/wall/<id>/route/<route_id>', methods=['PUT'])
+def update_route_on_wall(id: str, route_id: str):
+    """
+    Update an existing route on a wall.
+
+    Args:
+        id (str): The ID of the wall.
+        route_id (str): The ID of the route to update.
+
+    Returns:
+        Response: JSON response with the updated route.
+    """
+    class RouteUpdateSchema(marshmallow.Schema):
+        name = marshmallow.fields.Str(required=False)
+        description = marshmallow.fields.Str(required=False)
+        grade = marshmallow.fields.Int(required=False)
+        date = marshmallow.fields.DateTime(format='iso', required=False)
+        hold_ids = marshmallow.fields.List(marshmallow.fields.Str(), required=False)
+
+    try:
+        data = RouteUpdateSchema().load(flask.request.get_json())
+    except marshmallow.exceptions.ValidationError as err:
+        return flask.jsonify(err.messages), http.HTTPStatus.BAD_REQUEST
+
+    try:
+        updated_route = wall_logic.update_route_on_wall(
+            wall_id=id,
+            route_id=route_id,
+            update_data=data
+        )
+    except ValueError as err:
+        return flask.jsonify({'error': str(err)}), http.HTTPStatus.NOT_FOUND
+
+    return flask.jsonify(updated_route.asdict()), http.HTTPStatus.OK
+
 @wall_bp.route('/wall/<id>/routes', methods=['GET'])
 def get_routes_for_wall(id):
     try:

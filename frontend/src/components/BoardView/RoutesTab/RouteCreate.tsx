@@ -27,7 +27,7 @@ const RouteCreate: React.FC<RouteCreateProps> = ({
   const { wall, selectedHolds } = useContext(BoardViewContext)!;
   const [formData, setFormData] = useState({
     name: '',
-    grade: 0,
+    grade: '0',
     description: '',
   });
   const [message, setMessage] = useState<string>('');
@@ -63,7 +63,7 @@ const RouteCreate: React.FC<RouteCreateProps> = ({
       setMessage('Route created successfully!');
       setFormData({
         name: '',
-        grade: 0,
+        grade: '0',
         description: '',
       });
       onClose();

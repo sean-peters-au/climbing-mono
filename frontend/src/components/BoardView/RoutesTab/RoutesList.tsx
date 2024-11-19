@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
-import { Box, Typography, Button, Stack, CircularProgress } from '@mui/material';
+import React, { useState, useContext } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Stack,
+  CircularProgress,
+} from '@mui/material';
 import {
   DataGrid,
   GridColDef,
   GridRowParams,
-  GridPaginationModel,
-  GridFilterModel,
   GridToolbarQuickFilter,
   GridToolbarFilterButton,
   GridToolbarContainer,
+  GridActionsCellItem,
 } from '@mui/x-data-grid';
-import { useRoutes } from '../../../hooks/useRoutes';
+import { useRoutes, useUpdateRoute } from '../../../hooks/useRoutes';
 import { Route } from '../../../types';
 import RouteCreate from './RouteCreate';
 import { QueryError } from '../../QueryError';
+import { BoardViewContext } from '../BoardViewContext';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
 
 interface RoutesListProps {
   wallId: string;
@@ -26,16 +34,17 @@ const RoutesList: React.FC<RoutesListProps> = ({
   selectedRoute,
   onRouteSelect,
 }) => {
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    pageSize: 5,
-    page: 0,
-  });
-  const [filterModel, setFilterModel] = useState<GridFilterModel>({
-    items: [],
-  });
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [isEditingHolds, setIsEditingHolds] = useState(false);
 
   const { data: routes, isLoading, error } = useRoutes(wallId);
+  const updateRouteMutation = useUpdateRoute();
+
+  const {
+    setSelectedHolds,
+    selectedHolds,
+    setSelectedRoute,
+  } = useContext(BoardViewContext)!;
 
   if (isLoading) {
     return <CircularProgress />;
@@ -63,6 +72,7 @@ const RoutesList: React.FC<RoutesListProps> = ({
 
   const handleClearSelection = () => {
     onRouteSelect(null);
+    setIsEditingHolds(false);
   };
 
   const handleCreateRoute = () => {
@@ -73,24 +83,126 @@ const RoutesList: React.FC<RoutesListProps> = ({
     setOpenCreateDialog(false);
   };
 
+  const handleEditHolds = () => {
+    if (selectedRoute) {
+      // Set the selected holds to the route's holds
+      setSelectedHolds(selectedRoute.holds.map((hold) => hold.id));
+      setIsEditingHolds(true);
+    }
+  };
+
+  const handleSaveHolds = async () => {
+    if (selectedRoute) {
+      // Prepare updated route data
+      const updatedRoute = {
+        name: selectedRoute.name,
+        description: selectedRoute.description,
+        grade: selectedRoute.grade,
+        date: selectedRoute.date,
+        hold_ids: selectedHolds,
+      };
+
+      await updateRouteMutation.mutateAsync({
+        wallId,
+        routeId: selectedRoute.id,
+        routeData: updatedRoute,
+      });
+
+      setIsEditingHolds(false);
+      // Refresh the selected route with updated holds
+      setSelectedRoute({
+        ...selectedRoute,
+        ...updatedRoute,
+      });
+    }
+  };
+
   const isRouteSelected = Boolean(selectedRoute);
 
+  const handleProcessRowUpdate = async (newRow: Route) => {
+    // Find the existing route data
+    const existingRoute = routes.find((route) => route.id === newRow.id);
+    if (!existingRoute) {
+      console.error('Existing route not found');
+      return newRow;
+    }
+
+    // Prepare the updated route data
+    const updatedRouteData = {
+      name: newRow.name,
+      description: newRow.description,
+      grade: newRow.grade,
+      date: newRow.date,
+      hold_ids: existingRoute.holds.map((hold) => hold.id),
+    };
+
+    // Send the update request
+    try {
+      await updateRouteMutation.mutateAsync({
+        wallId: wallId,
+        routeId: newRow.id,
+        routeData: updatedRouteData,
+      });
+    } catch (error) {
+      console.error('Error updating route:', error);
+    }
+
+    return newRow;
+  };
+
   const columns: GridColDef[] = [
-    { field: 'name', headerName: 'Name', flex: 2 },
-    { field: 'description', headerName: 'Description', flex: 2 },
+    {
+      field: 'name',
+      headerName: 'Name',
+      flex: 2,
+      editable: true,
+    },
+    {
+      field: 'description',
+      headerName: 'Description',
+      flex: 2,
+      editable: true,
+    },
     {
       field: 'grade',
       headerName: 'Grade',
       type: 'number',
       width: 120,
-      valueGetter: (param) => `V${param}`,
+      editable: true,
+      valueFormatter: (params) => `V${params}`,
     },
     {
       field: 'date',
       headerName: 'Date',
-      width: 120,
+      width: 150,
+      editable: true,
+      type: 'date',
       valueGetter: (params) =>
-        params ? new Date(params).toLocaleDateString() : '',
+        params ? new Date(params) : null,
+    },
+    {
+      field: 'actions',
+      type: 'actions',
+      headerName: 'Actions',
+      width: 120,
+      getActions: (params) => {
+        if (selectedRoute?.id === params.id) {
+          return isEditingHolds ? [
+            <GridActionsCellItem
+              icon={<SaveIcon />}
+              label="Save Holds"
+              onClick={handleSaveHolds}
+            />
+          ] : [
+            <GridActionsCellItem
+              icon={<EditIcon />}
+              label="Edit Holds"
+              onClick={handleEditHolds}
+            />
+          ];
+        }
+        return [];
+      },
     },
   ];
 
@@ -131,12 +243,12 @@ const RoutesList: React.FC<RoutesListProps> = ({
       <DataGrid
         rows={routes}
         columns={columns}
-        pagination
-        paginationModel={paginationModel}
-        onPaginationModelChange={(model) => setPaginationModel(model)}
-        pageSizeOptions={[5, 10, 20]}
-        filterModel={filterModel}
-        onFilterModelChange={(model) => setFilterModel(model)}
+        initialState={{
+          sorting: {
+            sortModel: [{ field: 'date', sort: 'desc' }],
+          },
+        }}
+        autoHeight={false}
         slots={{ toolbar: RoutesListToolbar }}
         slotProps={{
           toolbar: {
@@ -145,13 +257,13 @@ const RoutesList: React.FC<RoutesListProps> = ({
         }}
         onRowClick={handleRowClick}
         rowSelectionModel={selectedRoute ? [selectedRoute.id] : []}
-        // compact
-
+        editMode="cell"
+        processRowUpdate={handleProcessRowUpdate}
+        onProcessRowUpdateError={(error) => {
+          console.error('Error updating row:', error);
+        }}
       />
-      <RouteCreate
-        open={openCreateDialog}
-        onClose={handleCloseDialog}
-      />
+      <RouteCreate open={openCreateDialog} onClose={handleCloseDialog} />
     </Box>
   );
 };

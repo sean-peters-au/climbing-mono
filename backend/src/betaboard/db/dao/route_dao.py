@@ -43,25 +43,25 @@ class RouteDAO:
 
     @staticmethod
     @base_dao.with_session
-    def save_route(
+    def create_route(
         route_model: routes_model.RouteModel,
         session: sqlalchemy.orm.Session
-    ):
-        if route_model.id:
-            # Update existing route
-            route = session.query(route_schema.RouteSchema).get(route_model.id)
-            if route is None:
-                raise ValueError("Route with given ID does not exist.")
-        else:
-            # Create new route
-            route = route_schema.RouteSchema()
-            session.add(route)
+    ) -> None:
+        """
+        Create a new route in the database.
 
-        route.name = route_model.name
-        route.description = route_model.description
-        route.grade = route_model.grade
-        route.date = route_model.date
-        route.wall_id = route_model.wall_id
+        Args:
+            route_model (RouteModel): The route model to create.
+            session (sqlalchemy.orm.Session): The database session.
+        """
+        route = route_schema.RouteSchema(
+            name=route_model.name,
+            description=route_model.description,
+            grade=route_model.grade,
+            date=route_model.date,
+            wall_id=int(route_model.wall_id)
+        )
+        session.add(route)
 
         # Associate holds
         hold_ids = [int(hold.id) for hold in route_model.holds if hold.id]
@@ -71,3 +71,34 @@ class RouteDAO:
 
         session.flush()
         route_model.id = str(route.id)
+
+    @staticmethod
+    @base_dao.with_session
+    def update_route(
+        route_model: routes_model.RouteModel,
+        session: sqlalchemy.orm.Session
+    ) -> None:
+        """
+        Update an existing route in the database.
+
+        Args:
+            route_model (RouteModel): The route model with updated data.
+            session (sqlalchemy.orm.Session): The database session.
+        """
+        route = session.query(route_schema.RouteSchema).get(int(route_model.id))
+        if route is None:
+            raise ValueError("Route with given ID does not exist.")
+
+        route.name = route_model.name
+        route.description = route_model.description
+        route.grade = route_model.grade
+        route.date = route_model.date
+        route.wall_id = int(route_model.wall_id)
+
+        # Update holds association
+        hold_ids = [int(hold.id) for hold in route_model.holds if hold.id]
+        route.holds = session.query(hold_schema.HoldSchema) \
+            .filter(hold_schema.HoldSchema.id.in_(hold_ids)) \
+            .all()
+
+        session.flush()

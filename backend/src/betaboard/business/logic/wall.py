@@ -1,3 +1,4 @@
+import datetime
 import tempfile
 import typing
 
@@ -118,15 +119,20 @@ def get_wall(id):
 
     return wall_model
 
-def add_route_to_wall(wall_id, name, description, grade, date, hold_ids):
+def add_route_to_wall(
+    wall_id: str,
+    name: str,
+    description: str,
+    grade: int,
+    date: datetime.datetime,
+    hold_ids: typing.List[str]
+) -> routes_model.RouteModel:
     wall_model = wall_dao.WallDAO.get_wall_by_id(int(wall_id))
     if not wall_model:
         raise ValueError("Wall with given ID does not exist.")
 
-    # Fetch Hold objects
-    holds = hold_dao.HoldDAO.get_holds_by_ids([int(id) for id in hold_ids])
+    holds = hold_dao.HoldDAO.get_holds_by_ids([int(hold_id) for hold_id in hold_ids])
 
-    # Create a new climb (route)
     route = routes_model.RouteModel(
         name=name,
         description=description,
@@ -135,9 +141,52 @@ def add_route_to_wall(wall_id, name, description, grade, date, hold_ids):
         wall_id=wall_id,
         holds=holds,
     )
-    route_dao.RouteDAO.save_route(route)
+    route_dao.RouteDAO.create_route(route)
 
     return route
+
+
+def update_route_on_wall(
+    wall_id: str,
+    route_id: str,
+    update_data: typing.Dict[str, typing.Any]
+) -> routes_model.RouteModel:
+    """
+    Update an existing route on a wall.
+
+    Args:
+        wall_id (str): The ID of the wall.
+        route_id (str): The ID of the route to update.
+        update_data (Dict[str, Any]): The data to update on the route.
+
+    Returns:
+        RouteModel: The updated route model.
+    """
+    wall_model = wall_dao.WallDAO.get_wall_by_id(int(wall_id))
+    if not wall_model:
+        raise ValueError("Wall with the given ID does not exist.")
+
+    route_model = route_dao.RouteDAO.get_route_by_id(int(route_id))
+    if not route_model:
+        raise ValueError("Route with the given ID does not exist.")
+
+    if route_model.wall_id != wall_id:
+        raise ValueError("Route does not belong to the specified wall.")
+
+    # Update route fields
+    route_model.name = update_data.get('name', route_model.name)
+    route_model.description = update_data.get('description', route_model.description)
+    route_model.grade = update_data.get('grade', route_model.grade)
+    route_model.date = update_data.get('date', route_model.date)
+
+    if 'hold_ids' in update_data:
+        hold_ids = update_data['hold_ids']
+        holds = hold_dao.HoldDAO.get_holds_by_ids([int(hid) for hid in hold_ids])
+        route_model.holds = holds
+
+    route_dao.RouteDAO.update_route(route_model)
+
+    return route_model
 
 def get_routes_for_wall(wall_id: str) -> typing.List[routes_model.RouteModel]:
     """Get all routes for a wall."""

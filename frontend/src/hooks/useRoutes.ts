@@ -16,7 +16,26 @@ export const useCreateRoute = (wallId: string) => {
     mutationFn: (routeData: CreateRouteBody) => 
       routeQueries.createRoute({ wallId, routeData }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['routes', wallId] });
+      queryClient.invalidateQueries(['routes', wallId]);
     }
+  });
+};
+
+export const useUpdateRoute = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({
+      wallId,
+      routeId,
+      routeData,
+    }: {
+      wallId: string;
+      routeId: string;
+      routeData: CreateRouteBody;
+    }) => routeQueries.updateRoute({ wallId, routeId, routeData }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries(['routes', variables.wallId]);
+    },
   });
 };

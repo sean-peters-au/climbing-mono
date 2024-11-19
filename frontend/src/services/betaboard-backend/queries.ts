@@ -4,7 +4,7 @@ import { Wall, Route, Recording, AnalysisData } from '../../types';
 export type CreateRouteBody = {
   name: string;
   hold_ids: string[];
-  grade: number;
+  grade: string;
   description: string;
   date: string;
 };
@@ -45,7 +45,25 @@ export const routeQueries = {
   createRoute: async ({ wallId, routeData }: { wallId: string; routeData: CreateRouteBody }): Promise<Route> => {
     const response = await API.post(`/wall/${wallId}/route`, routeData);
     return response.data;
-  }
+  },
+
+  updateRoute: async ({
+    wallId,
+    routeId,
+    routeData,
+  }: {
+    wallId: string;
+    routeId: string;
+    routeData: CreateRouteBody;
+  }): Promise<Route> => {
+    const formattedData = {
+      ...routeData,
+      date: new Date(routeData.date).toISOString()
+    };
+    
+    const response = await API.put(`/wall/${wallId}/route/${routeId}`, formattedData);
+    return response.data;
+  },
 };
 
 export const recordingQueries = {
