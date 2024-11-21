@@ -9,6 +9,7 @@ numpy = "*"
 scipy = "*"
 pillow = "*"
 opencv-python = "*"
+pyvista = "*"
 
 [dev-packages]
 

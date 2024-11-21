@@ -35,3 +35,14 @@ cmake .. -DCMAKE_BUILD_TYPE=Release \
 
 make -j$(sysctl -n hw.ncpu)
 sudo make install
+
+# Model Viewer
+npm create vite@latest board-model-viewer  -- --template react-ts
+cd board-model-viewer
+npm install @react-three/fiber @react-three/drei three
+npm install -D @types/three
+mkdir public/models
+
+# Model Buildier
+pipenv sync
+

@@ -11,4 +11,5 @@ thist to work for myself (Mac M2)
 1. `./setup.sh`
 2. `pipenv install`
 3. `pipenv run python build_model.py`
-4. `pipenv run python view_model.py`
+4. `cp example/mvs/scene_mesh_textured* board-model-viewer/public/models/`
+5.

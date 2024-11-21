@@ -4,3 +4,5 @@ example/reconstruction/
 openMVG/
 openMVS/
 vcglib/
+board-model-viewer/public/models/
+board-model-viewer/node_modules/

@@ -1,16 +1,13 @@
 import os
 import subprocess
 from typing import Optional
+import open3d as o3d
 
 # Assuming OpenMVG is built in the parent directory
 OPENMVG_SRC = os.path.abspath(os.path.join(os.path.dirname(__file__), "openMVG"))
 OPENMVG_BUILD = os.path.abspath(os.path.join(os.path.dirname(__file__), "openMVG", "build"))
 OPENMVG_CAMERA_DB = os.path.abspath(os.path.join(os.path.dirname(__file__), "openMVG", "src", "openMVG", "exif", "sensor_width_database", "sensor_width_camera_database.txt"))
 OPENMVS_BIN = "/usr/local/bin/OpenMVS"
-
-print(OPENMVG_SRC)
-print(OPENMVG_BUILD)
-print(OPENMVG_CAMERA_DB)
 
 def create_directories(project_dir: str):
     """
@@ -63,6 +60,18 @@ def check_log(mvs_dir: str, command_name: str) -> None:
         print(f"\nContents of {latest_log}:")
         with open(os.path.join(mvs_dir, latest_log), 'r') as f:
             print(f.read())
+
+def check_ply_colors(file_path: str) -> None:
+    """Check if a PLY file contains vertex colors."""
+    if not os.path.exists(file_path):
+        print(f"File does not exist: {file_path}")
+        return
+        
+    mesh = o3d.io.read_triangle_mesh(file_path)
+    print(f"\nChecking colors in {os.path.basename(file_path)}:")
+    print(f"Has vertex colors: {mesh.has_vertex_colors()}")
+    print(f"Vertices: {len(mesh.vertices)}")
+    print(f"Triangles: {len(mesh.triangles)}")
 
 def reconstruct(project_dir: str):
     """
@@ -142,7 +151,7 @@ def reconstruct(project_dir: str):
         'openMVG_main_openMVG2openMVS',
         '-i', os.path.join(recon_dir, 'sfm_data.bin'),
         '-o', os.path.join(mvs_dir, 'scene.mvs'),
-        '-d', undistorted_dir  # Specify where to save undistorted images
+        '-d', undistorted_dir,  # Specify where to save undistorted images
     ])
 
     # 8. OpenMVS: Densify point cloud
@@ -164,54 +173,82 @@ def reconstruct(project_dir: str):
         '-o', os.path.join(mvs_dir, 'scene_dense.mvs'),
     ], cwd=mvs_dir)  # Set the working directory directly
 
+    # After dense point cloud generation
+    dense_ply = os.path.join(mvs_dir, 'scene_dense.ply')
+    print("\nAfter DensifyPointCloud:")
+    check_ply_colors(dense_ply)
+
     # 9. OpenMVS: Reconstruct mesh
-    print(f"\nChecking files before ReconstructMesh:")
     dense_scene = os.path.join(mvs_dir, 'scene_dense.mvs')
-    print(f"Dense scene file exists: {os.path.exists(dense_scene)}")
-    
+    mesh_ply = os.path.join(mvs_dir, 'scene_mesh.ply')
     run_command([
         'ReconstructMesh',
-        dense_scene,
+        dense_scene,  # The MVS file for camera info
+        '--pointcloud-file', dense_ply,  # The actual point cloud with colors
         '--verbosity', '2',
         '--remove-spurious', '0',
         '--smooth', '2',
         '--max-threads', '4',
-        '-o', os.path.join(mvs_dir, 'scene_mesh.ply'),  # Output as PLY
+        '--export-type', 'ply',
+        '-o', mesh_ply,
     ], cwd=mvs_dir)
     check_log(mvs_dir, 'ReconstructMesh')
 
+    # After mesh reconstruction
+    print("\nAfter ReconstructMesh:")
+    check_ply_colors(mesh_ply)
+
     # 10. OpenMVS: Refine mesh
     print(f"\nChecking files before RefineMesh:")
-    mesh_file = os.path.join(mvs_dir, 'scene_mesh.ply')  # Use PLY file
-    print(f"Mesh file exists: {os.path.exists(mesh_file)}")
+    print(f"Mesh file exists: {os.path.exists(mesh_ply)}")
     
+    refined_ply = os.path.join(mvs_dir, 'scene_mesh_refined.ply')
     run_command([
         'RefineMesh',
         dense_scene,  # Use the original MVS file for camera info
         '--resolution-level', '1',
         '--max-threads', '4',
-        '--mesh-file', mesh_file,  # Specify input mesh separately
-        '-o', os.path.join(mvs_dir, 'scene_mesh_refined.ply'),  # Output as PLY
+        '--mesh-file', mesh_ply,  # Input mesh
+        '-o', refined_ply,  # Output mesh
     ], cwd=mvs_dir)
     check_log(mvs_dir, 'RefineMesh')
 
+    # After mesh refinement
+    print("\nAfter RefineMesh:")
+    check_ply_colors(refined_ply)
+
     # 11. OpenMVS: Texture mesh
-    print(f"\nChecking files before TextureMesh:")
-    refined_mesh = os.path.join(mvs_dir, 'scene_mesh_refined.ply')
-    print(f"Refined mesh file exists: {os.path.exists(refined_mesh)}")
-    
+    textured_obj = os.path.join(mvs_dir, 'scene_mesh_textured')  # Remove extension
     run_command([
         'TextureMesh',
         dense_scene,  # Use the original MVS file for camera info
-        '--mesh-file', refined_mesh,  # Specify input mesh separately
+        '--mesh-file', refined_ply,
+        '--export-type', 'obj',  # Explicitly set output format
+        '--decimate', '0.5',     # Optionally reduce texture complexity
         '--verbosity', '2',
         '--texture-size', '8192',
+        '--empty-color', '0',    # Fill empty areas with black
         '--close-holes', '30',
-        '-o', os.path.join(mvs_dir, 'scene_mesh_textured.obj'),
+        '--resolution-level', '1',
+        '-o', textured_obj,      # Output without extension
     ], cwd=mvs_dir)
+
+    print("\nChecking generated files:")
+    expected_files = [
+        'scene_mesh_textured.obj',
+        'scene_mesh_textured.mtl',
+        'scene_mesh_textured_material_0.png'
+    ]
+    for file in expected_files:
+        path = os.path.join(mvs_dir, file)
+        print(f"{file}: {os.path.exists(path)}")
+
+    textured_ply = os.path.join(mvs_dir, 'scene_mesh_textured.ply')
+    check_ply_colors(textured_ply)
 
     print("3D reconstruction completed successfully.")
 
 if __name__ == '__main__':
+    
     project_directory = 'example'
     reconstruct(project_directory)
