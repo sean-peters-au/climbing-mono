@@ -24,7 +24,6 @@
 
 ## Routes
 
-- Add edits
 - Add delete
 
 # Sensors
@@ -33,15 +32,20 @@
 
 # Code
 
+- Clean up CRUD
 - Better error handling
 - Tests
 - Deployment
+- Rename; bb-backend, bb-frontend, bb-cv, bb-camera
 
 # Skeletal Frame
 
 - Camera
 - Skeletal frame recognition
 - Incorporate into recording analysis
-- Add fallback: Select all the points where the AI missed (to help AI for second pass)
 
-# 3D board
+# 3D View
+
+- Model builder POC
+- Model builder via backend and bb-cv
+- Model viewer in frontend

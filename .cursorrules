@@ -1,35 +1,14 @@
-Styling rules for Python
-- Use absolute imports wherever possible with using `from` i.e.
-Don't do this
-```
-from sqlalchemy import Column, Integer
-from db.base import Base
-
-class BaseModel(Base):
-    __abstract__ = True
-    id = Column(Integer, primary_key=True, index=True)
-```
-Do this
-```
-import sqlalchemy
-import db.base
-
-class BaseModel(db.base.Base):
-    __abstract__ = True
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
-```
+Styling Rules in Python
+- Use absolute imports wherever possible e.g. `import sqlalchemy` and `sqlalchemy.Column` instead of `from sqlalchemy import Column`
 - Always use type hints
 - Wherever it isn't super obvious, add a docstring. Use Google style docstrings.
-```
-def my_function(arg1: int, arg2: str) -> int:
-    """
-    My function does something.
-    """
-    return arg1 + len(arg2)
-```
 - Import order (with a new line between each group):
 1. Standard library imports
 2. Related third party imports
 3. Local application/library specific imports
 - Two new lines after imports
 - One new line between everything else (classes, functions, etc.)
+- In all other situations, when writing Python, follow Google style standards
+
+Styling Rules in TypeScript
+- In all situations, when writing TypeScript, follow Google style standards
