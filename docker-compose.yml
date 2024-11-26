@@ -9,7 +9,7 @@ services:
     ports:
       - "4000:4000"
     env_file:
-      - ./frontend/.env
+      - ./bb-frontend/.env
     command: sh -c "chmod +x /app/start-frontend.sh && /app/start-frontend.sh"
     depends_on:
       - bb-backend
@@ -48,17 +48,18 @@ services:
     ports:
       - "5432:5432"
 
-  # betaboard-camera:
+  # TODO: We will need a mock camera service for development
+  # bb-camera:
   #   build:
-  #     context: ./betaboard-camera
+  #     context: ./bb-camera
   #     dockerfile: Dockerfile.amd64
   #   volumes:
-  #     - ./betaboard-camera:/app
-  #     - ./betaboard-camera/static/videos:/opt/betaboard-camera/videos
+  #     - ./bb-camera:/app
+  #     - ./bb-camera/static/videos:/opt/betaboard-camera/videos
   #   ports:
   #     - "8000:8000"
   #   env_file:
-  #     - ./betaboard-camera/.env
+  #     - ./bb-camera/.env
 
 volumes:
   model-cache:  # Add this volume

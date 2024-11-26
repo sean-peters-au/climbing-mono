@@ -36,16 +36,13 @@
 - Better error handling
 - Tests
 - Deployment
-- Rename; bb-backend, bb-frontend, bb-cv, bb-camera
 
 # Skeletal Frame
 
-- Camera
 - Skeletal frame recognition
 - Incorporate into recording analysis
 
 # 3D View
 
-- Model builder POC
 - Model builder via backend and bb-cv
 - Model viewer in frontend

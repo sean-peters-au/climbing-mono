@@ -15,7 +15,7 @@ const Header: React.FC = () => (
         }}
       >
         <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>
-          Beta Board
+          betaboard.
         </Link>
       </Typography>
       <Button color="inherit" component={Link} to="/walls">

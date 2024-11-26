@@ -15,6 +15,7 @@ plotly = "*"
 sqlalchemy = "*"
 psycopg2-binary = "*"
 pandas = "*"
+mediapipe = "*"
 
 [dev-packages]
 setuptools = "*"

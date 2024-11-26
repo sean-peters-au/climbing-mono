@@ -1,32 +1,25 @@
+import flask
+
 import betaboard.business.models.recordings as recordings_model
 import betaboard.business.models.holds as holds_model
 import betaboard.business.logic.recording_analysis.plots as plots
 import betaboard.business.logic.recording_analysis.prepare as prepare
 import betaboard.business.logic.recording_analysis.calculations as calculations
+import betaboard.business.logic.recording_analysis.kinematics as kinematics
 import betaboard.business.logic.route as route_logic
 
 def analyze_recordings(recordings: list[recordings_model.RecordingModel]):
+    """
+    Analyzes a list of recordings and returns a dictionary with the analysis results.
+
+    Args:
+        recordings (list[recordings_model.RecordingModel]): A list of recordings to analyze.
+
+    Returns:
+        dict: A dictionary with the analysis results.
+    """
     analysis_results = {
-        'summary': {
-            'ai_summary': 'TODO',
-            'key_metrics': 'TODO',
-        },
         'recordings': [],
-        'comparison': {
-            'ai_summary': 'TODO',
-            'visualizations': {
-                'load_time_series': {
-                    'vectors': 'TODO',
-                    'annotations': 'TODO',
-                    'plot': 'TODO',
-                },
-                'load_distribution': {
-                    'vectors': 'TODO',
-                    'annotations': 'TODO',
-                    'plot': 'TODO',
-                },
-            },
-        }
     }
     
     # Perform analysis for each recording
@@ -105,8 +98,22 @@ def _analyze_single_recording(recording: recordings_model.RecordingModel):
         'load_stability': load_stability_visualization,
     }
 
+    # Get video data from S3 if available
+    kinematics_data = {}
+    if recording.video_s3_key:
+        try:
+            s3_client = flask.current_app.extensions['s3']
+            video_data = s3_client.get_file(recording.video_s3_key)
+            
+            # Analyze kinematics
+            kinematics_data = kinematics.analyze_video(video_data)
+        except Exception as e:
+            # Log error but continue with other analyses
+            print(f"Error analyzing kinematics: {str(e)}")
+            kinematics_data = {'error': str(e)}
+
     recording_result = {
-        'ai_summary': 'TODO',  # Replace with actual AI summary
+        'kinematics': kinematics_data,
         'visualizations': visualizations,
         'key_metrics': key_metrics,
     }

@@ -40,8 +40,8 @@ Primary data store for the system. Stores:
 
 ## Edge Devices
 
-Currently I deploy the entire stack to my local network. This gets a lot more complicated if I move core services
-to the cloud. This would allow easier access for other users, but means I have to figure out a solution to get around NAT (e.g. via message brokers)
+Currently I deploy the entire stack to my local network. This all will get a lot more complicated if I move core services
+to the cloud. This was the original plan as it would allow me to deploy it for a public audience, but means I have to figure out a solution to get around NAT for user edge devices. Currently thinking a message broker approach, but gosh that sounds tedious.
 
 ### bb-sensor
 
@@ -58,49 +58,6 @@ Raspberry Pi Zero W providing video services. Capabilities:
 - Recording for post-climb analysis
 - Still image capture for wall setup
 - Integration with recording system for synchronized playback
-
-#### Features & Implementation
-
-**Photo Capture**
-- Provides high-quality still images for wall setup and hold detection
-- Requirements:
-  - Fast capture response time (<500ms)
-  - JPEG format for web compatibility
-  - Resolution: 640x480
-- Implementation:
-  - REST endpoint using PiCamera's capture method
-  - Uses video port for faster capture
-  - Thread-safe camera access via locks
-
-**Live Streaming**
-- Real-time video feed for remote viewing.
-- Requirements:
-  - Low latency (<200ms)
-  - Efficient bandwidth usage
-  - Browser compatibility
-- Implementation:
-  - Frame-by-frame delivery using multipart responses
-  - Configurable frame rate (default: 20fps)
-  - Thread-safe frame capture
-
-**Video Recording**
-- Records climbs for later analysis and playback
-- Requirements:
-  - Synchronized with sensor data
-  - Efficient storage format
-  - Reliable long-duration recording
-- Implementation:
-  - H.264 hardware encoding
-  - Separate recording stream (splitter port)
-  - Timestamped filenames for easy correlation
-  - Automatic cleanup on shutdown
-
-**Technical Details**
-- Flask-based HTTP API
-- PiCamera for hardware-accelerated capture
-- Thread-safe design for concurrent operations
-- Graceful shutdown handling
-- Configurable resolution and frame rates
 
 ## Integration Points
 
