@@ -1,7 +1,7 @@
-<img src="../logo.png" align="left" width="192px" height="192px"/>
+<img src="logo.png" align="left" width="192px" height="192px"/>
 <img align="left" width="0" height="192px" hspace="10"/>
 
-Betaboard is an over-engineer, over-the-top climbing board app.
+betaboard is an over-engineer, over-the-top climbing board app.
 
 [![Under Development](https://img.shields.io/badge/under-development-orange.svg)](https://github.com/cez-aug/github-project-boilerplate) 
 
