@@ -1,4 +1,4 @@
-### Frontend
+# bb-frontend
 
 The frontend serves as the user interface layer, providing board management and climbing beta analysis tools.
 

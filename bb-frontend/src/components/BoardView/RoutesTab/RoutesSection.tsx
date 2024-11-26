@@ -1,5 +1,3 @@
-// frontend/src/components/BoardView/RoutesTab/RoutesSection.tsx
-
 import React, { useContext } from 'react';
 import { Box } from '@mui/material';
 import RoutesList from './RoutesList';

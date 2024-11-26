@@ -10,27 +10,27 @@ to provide a complete climbing analysis platform.
 
 ## Core Services
 
-### Frontend
+### bb-frontend
 
 A React/TypeScript application providing the user interface. Key design choices:
 - TypeScript for type safety
 - React Query + Context for clear separation of server/UI state
 
-### Backend
+### bb-backend
 
 A Flask application serving as the central coordinator. Key design choices:
 - Python selected for strength in data analysis and visualization
 - Simple REST API design with clear separation of concerns
 - Marshmallow, SQLAlchemy, Plotly...
 
-### Image Processing Service
+### bb-cv
 
 A separate service for computationally expensive image operations. Key design choices:
 - Designed for serverless deployment (AWS Lambda)
 - Isolated from main backend to allow independent scaling
 - Handles operations like hold detection and image segmentation
 
-### Postgres Database
+### postgres
 
 Primary data store for the system. Stores:
 - Wall configurations and images
@@ -40,7 +40,10 @@ Primary data store for the system. Stores:
 
 ## Edge Devices
 
-### Sensors
+Currently I deploy the entire stack to my local network. This gets a lot more complicated if I move core services
+to the cloud. This would allow easier access for other users, but means I have to figure out a solution to get around NAT (e.g. via message brokers)
+
+### bb-sensor
 
 Small, networked devices (Raspberry Pi Picos) attached to climbing holds. Design choices:
 - Simple HTTP API for data retrieval
@@ -48,7 +51,7 @@ Small, networked devices (Raspberry Pi Picos) attached to climbing holds. Design
 - One-time registration with backend
 - Real-time force/pressure data collection
 
-### Camera
+### bb-camera
 
 Raspberry Pi Zero W providing video services. Capabilities:
 - Live streaming for real-time viewing
@@ -70,13 +73,12 @@ Raspberry Pi Zero W providing video services. Capabilities:
   - Thread-safe camera access via locks
 
 **Live Streaming**
-- Real-time video feed for remote viewing
+- Real-time video feed for remote viewing.
 - Requirements:
   - Low latency (<200ms)
   - Efficient bandwidth usage
   - Browser compatibility
 - Implementation:
-  - MJPEG stream over HTTP
   - Frame-by-frame delivery using multipart responses
   - Configurable frame rate (default: 20fps)
   - Thread-safe frame capture

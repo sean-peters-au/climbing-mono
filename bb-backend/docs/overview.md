@@ -37,5 +37,5 @@ The backend is a Python Flask application that provides RESTful APIs for wall ma
 ### Toolset
 
 - **Framework**: Python Flask
-- **Database**: PostgreSQL with SQLAlchemy ORM
+- **Database**: PostgreSQL with SQLAlchemy ORM, and Alembic for migrations
 - **Data Serialization**: Marshmallow

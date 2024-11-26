@@ -1,4 +1,3 @@
-# backend/src/db/session_manager.py
 import threading
 import sqlalchemy
 import sqlalchemy.orm

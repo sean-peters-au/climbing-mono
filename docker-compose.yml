@@ -1,44 +1,44 @@
 version: '3.8'
 
 services:
-  frontend:
+  bb-frontend:
     image: node:14
     working_dir: /app
     volumes:
-      - ./frontend:/app
+      - ./bb-frontend:/app
     ports:
       - "4000:4000"
     env_file:
       - ./frontend/.env
     command: sh -c "chmod +x /app/start-frontend.sh && /app/start-frontend.sh"
     depends_on:
-      - backend
+      - bb-backend
 
-  backend:
+  bb-backend:
     build:
-      context: ./backend
+      context: ./bb-backend
       dockerfile: Dockerfile
     volumes:
-      - ./backend:/app
-      - ./backend/static:/app/static  # Mount the static directory
+      - ./bb-backend:/app
+      - ./bb-backend/static:/app/static  # Mount the static directory
       - model-cache:/root/.cache/huggingface  # Add this line
     ports:
       - "4001:4001"
     env_file:
-      - ./backend/.env
+      - ./bb-backend/.env
     depends_on:
-      - image-processing-service
+      - bb-cv
 
-  image-processing-service:
+  bb-cv:
     build:
-      context: ./image-processing-service
+      context: ./bb-cv
       dockerfile: Dockerfile
     volumes:
-      - ./image-processing-service/src:/app/src
+      - ./bb-cv/src:/app/src
     ports:
       - "4002:4002"
     env_file:
-      - ./image-processing-service/.env
+      - ./bb-cv/.env
 
   postgres:
     image: postgres:latest

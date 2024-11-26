@@ -1,5 +1,3 @@
-// frontend/src/components/BoardViewPanel/RoutesTab/RouteRecordings.tsx
-
 import React, { useEffect, useState } from 'react';
 import {
   Box,
