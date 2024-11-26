@@ -56,6 +56,50 @@ Raspberry Pi Zero W providing video services. Capabilities:
 - Still image capture for wall setup
 - Integration with recording system for synchronized playback
 
+#### Features & Implementation
+
+**Photo Capture**
+- Provides high-quality still images for wall setup and hold detection
+- Requirements:
+  - Fast capture response time (<500ms)
+  - JPEG format for web compatibility
+  - Resolution: 640x480
+- Implementation:
+  - REST endpoint using PiCamera's capture method
+  - Uses video port for faster capture
+  - Thread-safe camera access via locks
+
+**Live Streaming**
+- Real-time video feed for remote viewing
+- Requirements:
+  - Low latency (<200ms)
+  - Efficient bandwidth usage
+  - Browser compatibility
+- Implementation:
+  - MJPEG stream over HTTP
+  - Frame-by-frame delivery using multipart responses
+  - Configurable frame rate (default: 20fps)
+  - Thread-safe frame capture
+
+**Video Recording**
+- Records climbs for later analysis and playback
+- Requirements:
+  - Synchronized with sensor data
+  - Efficient storage format
+  - Reliable long-duration recording
+- Implementation:
+  - H.264 hardware encoding
+  - Separate recording stream (splitter port)
+  - Timestamped filenames for easy correlation
+  - Automatic cleanup on shutdown
+
+**Technical Details**
+- Flask-based HTTP API
+- PiCamera for hardware-accelerated capture
+- Thread-safe design for concurrent operations
+- Graceful shutdown handling
+- Configurable resolution and frame rates
+
 ## Integration Points
 
 ### Data Flow

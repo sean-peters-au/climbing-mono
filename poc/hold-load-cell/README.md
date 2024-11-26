@@ -1,6 +1,6 @@
 # Hold Metrics
 
-This was an initial proof of concept for capturing and visualising load sensor data
+This was an initial proof-of-concept for capturing and visualising load sensor data
 
 It lets you configure, zero, calibrate and visualise 1D force on N load sensors.
 
