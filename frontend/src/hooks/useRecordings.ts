@@ -9,13 +9,25 @@ export const useRecordings = (routeId: string) => {
   });
 };
 
-export const useCreateRecording = () => {
+export const useStartRecording = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: recordingQueries.createRecording,
-    onSuccess: () => {
-      // Invalidate relevant queries
+    mutationFn: recordingQueries.startRecording,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['recordings']
+      });
+    }
+  });
+};
+
+export const useStopRecording = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: recordingQueries.stopRecording,
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ 
         queryKey: ['recordings']
       });

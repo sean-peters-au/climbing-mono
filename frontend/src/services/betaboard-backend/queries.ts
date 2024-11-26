@@ -72,8 +72,13 @@ export const recordingQueries = {
     return response.data.recordings;
   },
   
-  createRecording: async (recordingData: Partial<Recording>): Promise<Recording> => {
-    const response = await API.post('/recording', recordingData);
+  startRecording: async (routeId: string): Promise<Recording> => {
+    const response = await API.post('/recording/start', { route_id: routeId });
+    return response.data;
+  },
+  
+  stopRecording: async (recordingId: string): Promise<Recording> => {
+    const response = await API.post(`/recording/${recordingId}/stop`);
     return response.data;
   },
   

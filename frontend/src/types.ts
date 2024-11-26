@@ -66,8 +66,10 @@ export interface Recording {
   id: string;
   route_id: string;
   start_time: string;
-  end_time: string;
+  end_time: string | null;
   sensor_readings: SensorReadingFrame[];
+  video_s3_key: string | null;
+  status: 'recording' | 'completed' | 'failed';
 }
 export interface VisualizationData {
   vector_playbacks: HoldVectorPlayback[];

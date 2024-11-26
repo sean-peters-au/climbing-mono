@@ -18,14 +18,19 @@ class SensorReadingSchema(base_schema.BaseSchema):
     recording = sqlalchemy.orm.relationship('RecordingSchema', back_populates='sensor_readings')
     hold = sqlalchemy.orm.relationship('HoldSchema')
 
+
 class RecordingSchema(base_schema.BaseSchema):
     __tablename__ = 'recordings'
 
     route_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('routes.id'), nullable=False)
     start_time = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)
-    end_time = sqlalchemy.Column(sqlalchemy.DateTime)
-    frequency = sqlalchemy.Column(sqlalchemy.Float, default=100.0)
+    end_time = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)
     video_s3_key = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    status = sqlalchemy.Column(
+        sqlalchemy.Enum('recording', 'completed', 'failed', name='recording_status'),
+        nullable=False,
+        default='recording'
+    )
 
     # Relationships
     route = sqlalchemy.orm.relationship('RouteSchema', back_populates='recordings')

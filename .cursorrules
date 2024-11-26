@@ -12,3 +12,4 @@ Styling Rules in Python
 
 Styling Rules in TypeScript
 - In all situations, when writing TypeScript, follow Google style standards
+- Always include a comment above useEffect and similar hooks describing what they do

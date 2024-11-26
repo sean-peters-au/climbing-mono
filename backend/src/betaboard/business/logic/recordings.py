@@ -2,78 +2,125 @@ import datetime
 import io
 import typing
 
-import numpy as np
 import flask
+import numpy as np
 
 import betaboard.business.models.recordings as recordings_model
 import betaboard.db.dao.recording_dao as recording_dao
 import betaboard.db.dao.route_dao as route_dao
 import betaboard.db.dao.hold_dao as hold_dao
 
-def create_recording(
-    start_time: datetime.datetime,
-    end_time: datetime.datetime,
-    route_id: str
-) -> recordings_model.RecordingModel:
+
+def start_recording(route_id: str) -> recordings_model.RecordingModel:
     """
-    Creates a new recording for a route.
+    Start recording a climbing attempt.
 
-    :param start_time: The start time of the recording.
-    :param end_time: The end time of the recording.
-    :param route_id: The ID of the route.
-    :return: The created recording model.
+    Args:
+        route_id: ID of the route being climbed.
+
+    Returns:
+        RecordingModel: The created recording model.
+
+    Raises:
+        ValueError: If route doesn't exist or camera service fails.
     """
-    route_model = route_dao.RouteDAO.get_route_by_id(route_id)
-    hold_ids = [hold.id for hold in route_model.holds]
+    # Verify route exists
+    route_dao.RouteDAO.get_route_by_id(route_id)
 
-    # Simulate the recording data
-    sensor_reading_frames = _simulate_recording(start_time, end_time, hold_ids)
+    # Get camera service
+    camera_client = flask.current_app.extensions['camera_service']
 
-    # Get the camera service client and S3 client
+    # Start recording on camera
+    print("Starting camera recording")
+    if not camera_client.start_recording():
+        raise ValueError("Failed to start camera recording")
+    print("Camera recording started")
+
+    # Create recording entry
+    recording_model = recording_dao.RecordingDAO.create_recording(
+        route_id=route_id,
+        start_time=datetime.datetime.utcnow()
+    )
+
+    return recording_model
+
+
+def stop_recording(recording_id: str) -> recordings_model.RecordingModel:
+    """
+    Stop recording a climbing attempt, save the video, and generate sensor data.
+
+    Args:
+        recording_id (str): The ID of the recording to stop.
+
+    Returns:
+        RecordingModel: The updated recording model.
+
+    Raises:
+        ValueError: If recording not found or services fail.
+    """
+    # Get the current recording
+    recording = recording_dao.RecordingDAO.get_recording_by_id(recording_id)
+    
+    # Get services
     camera_client = flask.current_app.extensions['camera_service']
     s3_client = flask.current_app.extensions['s3']
 
-    # Fetch video from camera service
-    start_timestamp = int(start_time.timestamp())
-    end_timestamp = int(end_time.timestamp())
+    try:
+        # Stop recording and get video data
+        video_data = camera_client.stop_recording()
 
-    video_data = camera_client.get_video(start=start_timestamp, end=end_timestamp)
+        # Upload video to S3
+        video_file = io.BytesIO(video_data)
+        s3_key = s3_client.upload_file(video_file)
 
-    # Upload video to S3
-    video_file = io.BytesIO(video_data)
-    s3_key = s3_client.upload_file(video_file)
-    print(f"Uploaded video to S3 with key: {s3_key}")
-    print(f"Video url: {s3_client.get_presigned_url(s3_key)}")
+        # Get route and hold information for sensor simulation
+        route_model = route_dao.RouteDAO.get_route_by_id(recording.route_id)
+        hold_ids = [hold.id for hold in route_model.holds]
 
-    # Create the recording model
-    recording_model = recordings_model.RecordingModel(
-        id=None,
-        route_id=route_id,
-        start_time=start_time,
-        end_time=end_time,
-        sensor_readings=[
+        # Generate simulated sensor data
+        end_time = datetime.datetime.utcnow()
+        sensor_reading_frames = _simulate_recording(recording.start_time, end_time, hold_ids)
+
+        # Transform sensor readings to SensorReadingModel instances
+        sensor_readings_models = [
             [
                 recordings_model.SensorReadingModel(
-                    hold_id=sensor_reading['hold'],
+                    hold_id=sensor_reading['hold_id'],
                     x=sensor_reading['x'],
                     y=sensor_reading['y'],
                 )
                 for sensor_reading in frame
             ]
             for frame in sensor_reading_frames
-        ],
-        video_s3_key=s3_key
-    )
+        ]
 
-    # Save the recording
-    recording_dao.RecordingDAO.save_recording(recording_model)
+        # Update recording with all data
+        recording_model = recording_dao.RecordingDAO.update_recording(
+            recording_id=recording_id,
+            end_time=end_time,
+            video_s3_key=s3_key,
+            status='completed',
+            sensor_readings=sensor_readings_models
+        )
 
-    return recording_model
+        return recording_model
+
+    except Exception as e:
+        # Mark recording as failed if something goes wrong
+        recording_dao.RecordingDAO.update_recording(
+            recording_id=recording_id,
+            status='failed'
+        )
+        raise ValueError(f"Failed to stop recording: {str(e)}")
+
 
 def get_recording(recording_id: str) -> recordings_model.RecordingModel:
+    """Get a specific recording."""
     return recording_dao.RecordingDAO.get_recording_by_id(recording_id)
 
+
 def get_recordings(recording_ids: typing.List[str]) -> typing.List[recordings_model.RecordingModel]:
+    """Get multiple recordings by their IDs."""
     return recording_dao.RecordingDAO.get_recordings_by_ids(recording_ids)
 
 def _generate_smooth_load(duration_seconds, sample_rate, negative_mean=True):
@@ -112,7 +159,27 @@ def _simulate_hold_data(duration, sample_rate):
 
     return hold_data
 
-def _simulate_recording(start_time: datetime.datetime, end_time: datetime.datetime, hold_ids: typing.List[str], sample_rate=10):
+def _simulate_recording(
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
+    hold_ids: typing.List[str],
+    sample_rate=10
+) -> typing.List[typing.List[dict]]:
+    """
+    Simulates sensor readings for a recording.
+
+    Returns sensor readings as a list of frames, where each frame is a list of dictionaries
+    containing 'hold_id', 'x', and 'y'.
+
+    Args:
+        start_time: The start time of the recording.
+        end_time: The end time of the recording.
+        hold_ids: List of hold IDs involved in the route.
+        sample_rate: The sample rate for sensor readings.
+
+    Returns:
+        List[List[dict]]: Simulated sensor readings.
+    """
     holds = hold_dao.HoldDAO.get_holds_by_ids(hold_ids)
 
     sensor_reading_frames = []
@@ -191,7 +258,7 @@ def _simulate_recording(start_time: datetime.datetime, end_time: datetime.dateti
                 hold_data = {"x": 0.0, "y": 0.0}
 
             frame_readings.append({
-                'hold': hold_id,
+                'hold_id': hold_id,
                 'x': hold_data['x'],
                 'y': hold_data['y'],
             })

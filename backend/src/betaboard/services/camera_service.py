@@ -11,15 +11,30 @@ class CameraClient(service.Service):
         self.url = app.config['CAMERA_SERVICE']['url']
         app.extensions['camera_service'] = self
 
-    def get_video(self, start: int, end: int) -> bytes:
+    def start_recording(self) -> bool:
         """
-        Fetches video data from the camera service between start and end times.
+        Start recording video on the camera service.
 
-        :param start: Start timestamp in seconds.
-        :param end: End timestamp in seconds.
-        :return: Bytes of the video file.
+        Returns:
+            bool: True if recording started successfully.
+
+        Raises:
+            requests.RequestException: If the camera service request fails.
         """
-        params = {'start': start, 'end': end}
-        response = requests.get(f"{self.url}/video", params=params)
+        response = requests.post(f"{self.url}/start_recording")
+        response.raise_for_status()
+        return response.status_code == 200
+
+    def stop_recording(self) -> bytes:
+        """
+        Stop recording video on the camera service and retrieve the recorded video.
+
+        Returns:
+            bytes: The recorded video data.
+
+        Raises:
+            requests.RequestException: If the camera service request fails.
+        """
+        response = requests.post(f"{self.url}/stop_recording")
         response.raise_for_status()
         return response.content

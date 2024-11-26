@@ -8,7 +8,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { useRecordings, useCreateRecording } from '../../../hooks/useRecordings';
+import { useRecordings, useStartRecording, useStopRecording } from '../../../hooks/useRecordings';
 import { Route } from '../../../types';
 import { QueryError } from '../../QueryError';
 
@@ -23,16 +23,19 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
   selectedRecordingIds,
   setSelectedRecordingIds,
 }) => {
-  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [activeRecordingId, setActiveRecordingId] = useState<string | null>(null);
   const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
+  const [isStoppingRecording, setIsStoppingRecording] = useState(false);
 
   const { data: recordings, isLoading, error } = useRecordings(route.id);
-  const { mutate: createRecording, isLoading: creatingRecording } = useCreateRecording();
+  const { mutate: startRecording, isLoading: startingRecording } = useStartRecording();
+  const { mutate: stopRecording, isLoading: stoppingRecording } = useStopRecording();
 
+  // Recording duration timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isRecording && recordingStartTime) {
+    if (activeRecordingId && recordingStartTime && !isStoppingRecording) {
       timer = setInterval(() => {
         setRecordingDuration(
           Math.floor((Date.now() - recordingStartTime.getTime()) / 1000)
@@ -45,39 +48,36 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
     return () => {
       clearInterval(timer);
     };
-  }, [isRecording, recordingStartTime]);
-
-  if (isLoading) {
-    return <CircularProgress />;
-  }
+  }, [activeRecordingId, recordingStartTime, isStoppingRecording]);
 
   const handleStartRecording = () => {
-    if (!route) return;
-    setIsRecording(true);
-    setRecordingStartTime(new Date());
+    startRecording(route.id, {
+      onSuccess: (recording) => {
+        setActiveRecordingId(recording.id);
+        setRecordingStartTime(new Date());
+        setIsStoppingRecording(false);
+      },
+      onError: (error) => {
+        console.error('Error starting recording:', error);
+      }
+    });
   };
 
-  const handleEndRecording = async () => {
-    setIsRecording(false);
-    const recordingEndTime = new Date();
-
-    if (!route || !recordingStartTime) return;
-
-    try {
-      const newRecordingData = {
-        route_id: route.id,
-        start_time: recordingStartTime.toISOString(),
-        end_time: recordingEndTime.toISOString(),
-      };
-
-      // Use the mutation hook to create the recording
-      await createRecording(newRecordingData);
-
-      // Reset recording start time
-      setRecordingStartTime(null);
-    } catch (error) {
-      console.error('Error creating recording:', error);
-    }
+  const handleStopRecording = () => {
+    if (!activeRecordingId) return;
+    setIsStoppingRecording(true);
+    
+    stopRecording(activeRecordingId, {
+      onSuccess: () => {
+        setActiveRecordingId(null);
+        setRecordingStartTime(null);
+        setIsStoppingRecording(false);
+      },
+      onError: (error) => {
+        console.error('Error stopping recording:', error);
+        setIsStoppingRecording(false);
+      }
+    });
   };
 
   const handleRowSelection = (ids: string[]) => {
@@ -95,7 +95,12 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
       field: 'end_time',
       headerName: 'End Time',
       width: 200,
-      valueGetter: (params) => new Date(params).toLocaleString(),
+      valueGetter: (params) => params ? new Date(params).toLocaleString() : 'Recording...',
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 120,
     }
   ];
 
@@ -109,39 +114,22 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
   }
 
   if (error) {
-    return (
-      <QueryError error={error} />
-    );
+    return <QueryError error={error} />;
   }
 
   return (
     <Box sx={{ width: '100%' }}>
       {/* Recording Controls */}
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-        {isRecording ? (
-          <>
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={handleEndRecording}
-              disabled={creatingRecording}
-            >
-              {creatingRecording ? 'Saving...' : 'End Recording'}
-            </Button>
-            <Typography variant="body2" sx={{ ml: 2 }}>
-              Recording Duration: {recordingDuration} seconds
-            </Typography>
-          </>
-        ) : (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleStartRecording}
-            disabled={!route}
-          >
-            Start Recording
-          </Button>
-        )}
+      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', height: 40 }}>
+        <RecordingControls
+          isStarting={startingRecording}
+          activeRecordingId={activeRecordingId}
+          isStopping={stoppingRecording || isStoppingRecording}
+          recordingDuration={recordingDuration}
+          onStart={handleStartRecording}
+          onStop={handleStopRecording}
+          disabled={!route}
+        />
       </Box>
 
       {/* DataGrid for Recordings */}
@@ -160,6 +148,66 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
         <Typography variant="body2">No recordings available.</Typography>
       )}
     </Box>
+  );
+};
+
+interface RecordingControlsProps {
+  isStarting: boolean;
+  activeRecordingId: string | null;
+  isStopping: boolean;
+  recordingDuration: number;
+  onStart: () => void;
+  onStop: () => void;
+  disabled?: boolean;
+}
+
+const RecordingControls: React.FC<RecordingControlsProps> = ({
+  isStarting,
+  activeRecordingId,
+  isStopping,
+  recordingDuration,
+  onStart,
+  onStop,
+  disabled,
+}) => {
+  if (isStarting) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <CircularProgress size={24} sx={{ mr: 2 }} />
+        <Typography>Starting recording...</Typography>
+      </Box>
+    );
+  }
+
+  if (activeRecordingId) {
+    return (
+      <>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={onStop}
+          disabled={isStopping}
+        >
+          {isStopping ? 'Stopping...' : 'Stop Recording'}
+        </Button>
+        {!isStopping && (
+          <Typography variant="body2" sx={{ ml: 2 }}>
+            Recording Duration: {recordingDuration} seconds
+          </Typography>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <Button
+      variant="contained"
+      color="primary"
+      onClick={onStart}
+      disabled={disabled}
+    >
+      Start Recording
+    </Button>
   );
 };
 

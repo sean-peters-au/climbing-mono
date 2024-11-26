@@ -1,0 +1,14 @@
+[Unit]
+Description=BetaBoard Camera Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/betaboard-camera/src/bb_camera/app.py
+WorkingDirectory=/opt/betaboard-camera
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target 
