@@ -8,14 +8,30 @@ import tempfile
 
 import flask
 import flask_cors
+import libcamera
 import picamera2
 import picamera2.encoders
 import picamera2.outputs
 
 
+# Constants
+MAX_RECORDING_DURATION = 180  # 3 minutes in seconds
+FLIP_CAMERA = True  # Set to True if camera is mounted upside down
+RESOLUTION = {
+    "main": {"size": (1920, 1080)},  # 1080p for consistent FOV
+    "lores": {"size": (640, 480)},   # Keep lores for internal usage
+}
+FRAMERATE = 30
+
+# Quality settings for different modes
+RECORDING_BITRATE = 10000000  # 10Mbps for recording
+JPEG_QUALITY = {
+    "photo": 95,    # High quality for photos
+    "stream": 60    # Lower quality for streaming
+}
+
 app = flask.Flask(__name__)
 flask_cors.CORS(app)
-
 
 # Global camera instance and lock
 camera_lock = threading.Lock()
@@ -24,15 +40,11 @@ streaming = False
 recording = False
 encoder: typing.Optional[picamera2.encoders.H264Encoder] = None
 
-
 # Add recording start time and max duration constants
 recording_start_time: typing.Optional[float] = None
-MAX_RECORDING_DURATION = 180  # 3 minutes in seconds
-
 
 # Add to global variables at top of file
 current_recording_file: typing.Optional[str] = None
-
 
 def initialize_camera() -> None:
     """Initialize the camera if not already initialized."""
@@ -40,12 +52,16 @@ def initialize_camera() -> None:
     if camera is None:
         try:
             camera = picamera2.Picamera2()
-            # Default to lower resolution for streaming
-            camera.configure(camera.create_video_configuration(
-                main={"size": (640, 480)},
-                lores={"size": (320, 240)},
-                display="lores"
-            ))
+            
+            # Configure camera with standard resolution and framerate
+            config = camera.create_video_configuration(
+                main=RESOLUTION["main"],
+                lores=RESOLUTION["lores"],
+                display="lores",
+                transform=libcamera.Transform(vflip=FLIP_CAMERA, hflip=FLIP_CAMERA) if FLIP_CAMERA else None,
+                controls={"FrameRate": FRAMERATE}
+            )
+            camera.configure(config)
             camera.start()
             time.sleep(2)  # Camera warm-up time
         except Exception as e:
@@ -113,7 +129,8 @@ def capture_photo() -> flask.Response:
         try:
             initialize_camera()
             stream = io.BytesIO()
-            # Capture using the main configuration
+            # Set high quality for photos
+            camera.options["quality"] = JPEG_QUALITY["photo"]
             camera.capture_file(stream, format='jpeg')
             stream.seek(0)
             return flask.send_file(stream, mimetype='image/jpeg')
@@ -122,80 +139,74 @@ def capture_photo() -> flask.Response:
             raise e
 
 
-def gen_frames() -> typing.Generator[bytes, None, None]:
-    """Generate a continuous stream of JPEG frames."""
-    global streaming
-    try:
-        with camera_lock:
-            initialize_camera()
-            streaming = True
-        
-        # Configure camera for streaming
-        stream = io.BytesIO()
-        while True:
-            with camera_lock:
-                if not streaming:
-                    break
-            
-            # Capture JPEG directly
-            stream.seek(0)
-            stream.truncate()
-            camera.capture_file(stream, format='jpeg')
-            stream.seek(0)
-            frame = stream.read()
-            
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            
-            time.sleep(0.1)  # Limit frame rate
-            
-    except Exception as e:
-        cleanup_camera()
-        raise e
-
-
 @app.route('/video_feed')
 def video_feed() -> flask.Response:
-    """Stream video feed endpoint."""
-    response = flask.Response(
-        gen_frames(),
-        mimetype='multipart/x-mixed-replace; boundary=frame'
-    )
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    return response
+    """Stream video feed using MJPEG."""
+    with camera_lock:
+        try:
+            initialize_camera()
+            
+            # Create a streaming output
+            output = StreamingOutput()
+            encoder = picamera2.encoders.JpegEncoder()
+            camera.start_recording(encoder, picamera2.outputs.FileOutput(output))
+            
+            def generate():
+                try:
+                    while True:
+                        with output.condition:
+                            output.condition.wait()
+                            frame = output.frame
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                finally:
+                    camera.stop_recording()
+            
+            return flask.Response(
+                generate(),
+                mimetype='multipart/x-mixed-replace; boundary=frame'
+            )
+            
+        except Exception as e:
+            cleanup_camera()
+            raise e
+
+
+class StreamingOutput(io.BufferedIOBase):
+    def __init__(self):
+        self.frame = None
+        self.condition = threading.Condition()
+
+    def write(self, buf):
+        with self.condition:
+            self.frame = buf
+            self.condition.notify_all()
 
 
 @app.route('/start_recording', methods=['POST'])
 def start_recording() -> typing.Tuple[str, int]:
-    """Start recording video to a file at 1080p."""
+    """Start recording video to a file."""
     global recording, encoder, recording_start_time, current_recording_file
     
     with camera_lock:
         try:
             initialize_camera()
             if not recording:
-                # Create a temporary file for recording
                 temp_file = tempfile.NamedTemporaryFile(suffix='.h264', delete=False)
                 current_recording_file = temp_file.name
-                temp_file.close()  # Close but don't delete yet
+                temp_file.close()
                 
-                # Reconfigure for high quality recording
-                camera.stop()
-                camera.configure(camera.create_video_configuration(
-                    main={"size": (1920, 1080)},
-                    lores={"size": (640, 480)},
-                    display="lores"
-                ))
-                camera.start()
-                
-                encoder = picamera2.encoders.H264Encoder()
+                # Reduced bitrate for smoother recording
+                encoder = picamera2.encoders.H264Encoder(
+                    bitrate=RECORDING_BITRATE,
+                    repeat=False,
+                    iperiod=10
+                )
+                encoder.frame_skip_count = 10
                 camera.start_recording(encoder, current_recording_file)
                 recording = True
                 recording_start_time = time.time()
                 
-                # Start duration check thread
                 duration_thread = threading.Thread(target=check_recording_duration)
                 duration_thread.daemon = True
                 duration_thread.start()

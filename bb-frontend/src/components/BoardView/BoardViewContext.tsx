@@ -1,5 +1,5 @@
 import React, { createContext, useState, FC, useEffect } from 'react';
-import { Wall, Hold, Route, HoldAnnotationPlayback, HoldVectorPlayback, DrawnData, VisualMode } from '../../types';
+import { Wall, Hold, Route, HoldAnnotationPlayback, HoldVectorPlayback, DrawnData, VisualMode, KinematicsPlayback } from '../../types';
 
 interface BoardViewContextProps {
   wall: Wall;
@@ -30,6 +30,8 @@ interface BoardViewContextProps {
   setIsDrawing: (value: boolean) => void;
   drawnData: DrawnData | null;
   setDrawnData: (data: DrawnData | null) => void;
+  playbackKinematics: KinematicsPlayback | null;
+  setPlaybackKinematics: (data: KinematicsPlayback | null) => void;
 }
 
 export const BoardViewContext = createContext<BoardViewContextProps | undefined>(undefined);
@@ -53,6 +55,7 @@ export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }
   const frameRate = 100; // Hz
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [drawnData, setDrawnData] = useState<DrawnData | null>(null);
+  const [playbackKinematics, setPlaybackKinematics] = useState<KinematicsPlayback | null>(null);
 
   useEffect(() => {
     let lastFrameTime = 0;
@@ -133,6 +136,8 @@ export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }
         setIsDrawing,
         drawnData,
         setDrawnData,
+        playbackKinematics,
+        setPlaybackKinematics,
       }}
     >
       {children}

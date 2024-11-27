@@ -71,6 +71,7 @@ export interface Recording {
   video_s3_key: string | null;
   status: 'recording' | 'completed' | 'failed';
 }
+
 export interface VisualizationData {
   vector_playbacks: HoldVectorPlayback[];
   annotation_playbacks: HoldAnnotationPlayback[];
@@ -85,6 +86,7 @@ export interface RecordingAnalysis {
     load_distribution: VisualizationData;
     load_stability: VisualizationData;
   };
+  kinematics?: KinematicsPlayback;
 }
 
 export interface AnalysisData {
@@ -119,4 +121,29 @@ export interface PlotData {
 export interface DrawnData {
   bbox: number[]; // [x_min, y_min, width, height]
   mask: boolean[][];
+}
+
+export interface PoseLandmark {
+  x: number;
+  y: number;
+  z: number;
+  visibility: number;
+}
+
+export interface KinematicsFrame {
+  timestamp: number;
+  landmarks: Record<string, PoseLandmark>;
+}
+
+export interface KinematicsPlayback {
+  frames: KinematicsFrame[];
+  metadata: {
+    frame_count: number;
+    duration: number;
+    fps: number;
+    resolution: {
+      width: number;
+      height: number;
+    };
+  };
 }

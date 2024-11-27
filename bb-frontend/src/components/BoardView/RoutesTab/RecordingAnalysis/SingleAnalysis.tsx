@@ -27,6 +27,7 @@ export const SingleAnalysis: React.FC<SingleAnalysisProps> = ({
     setPlaybackVectors,
     setPlaybackAnnotations,
     setPlaybackFrames,
+    setPlaybackKinematics,
     setCurrentFrame,
     currentFrame,
   } = useContext(BoardViewContext)!;
@@ -79,8 +80,23 @@ export const SingleAnalysis: React.FC<SingleAnalysisProps> = ({
         setPlaybackAnnotations(annotationPlaybacks);
         setPlaybackFrames(vectorPlaybacks[0].data.length);
       }
+
+      // Set kinematics playback data
+      if (analysisData.recordings[0]?.kinematics ) {
+        setPlaybackKinematics(analysisData.recordings[0].kinematics);
+      } else {
+        setPlaybackKinematics(null);
+      }
     }
-  }, [analysisData, activeVisualization, frameRate, setPlaybackAnnotations, setPlaybackVectors, setPlaybackFrames]);
+  }, [
+    analysisData,
+    activeVisualization,
+    frameRate,
+    setPlaybackAnnotations,
+    setPlaybackVectors,
+    setPlaybackFrames,
+    setPlaybackKinematics
+  ]);
 
   const handlePlay = (visualizationType: 'load_time_series' | 'load_distribution' | 'load_stability') => {
     setActiveVisualization(visualizationType);

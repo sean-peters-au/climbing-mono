@@ -99,18 +99,13 @@ def _analyze_single_recording(recording: recordings_model.RecordingModel):
     }
 
     # Get video data from S3 if available
-    kinematics_data = {}
+    kinematics_data = None
     if recording.video_s3_key:
-        try:
-            s3_client = flask.current_app.extensions['s3']
-            video_data = s3_client.get_file(recording.video_s3_key)
-            
-            # Analyze kinematics
-            kinematics_data = kinematics.analyze_video(video_data)
-        except Exception as e:
-            # Log error but continue with other analyses
-            print(f"Error analyzing kinematics: {str(e)}")
-            kinematics_data = {'error': str(e)}
+        s3_client = flask.current_app.extensions['s3']
+        video_data = s3_client.get_file(recording.video_s3_key)
+        
+        # Analyze kinematics
+        kinematics_data = kinematics.analyze_video(video_data)
 
     recording_result = {
         'kinematics': kinematics_data,

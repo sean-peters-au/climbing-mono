@@ -1,10 +1,8 @@
-import io
 import tempfile
-from typing import Dict, List, Optional
+from typing import Dict
 
 import cv2
 import mediapipe as mp
-import numpy as np
 
 
 def analyze_video(video_data: bytes) -> Dict:

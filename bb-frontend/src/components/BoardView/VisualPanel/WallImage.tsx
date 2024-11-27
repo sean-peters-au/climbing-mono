@@ -2,6 +2,7 @@ import React, { useContext, useRef } from 'react';
 import { Box } from '@mui/material';
 import { BoardViewContext } from '../BoardViewContext';
 import HoldOverlay from './HoldOverlay';
+import KinematicsOverlay from './KinematicsOverlay';
 import Drawing from './Drawing';
 import ThreeDView from './ThreeDView';
 import VideoPlayer from './VideoPlayer';
@@ -36,6 +37,7 @@ const WallImage: React.FC = () => {
       {visualMode === 'Video' && <VideoPlayer />}
 
       <HoldOverlay />
+      <KinematicsOverlay />
       <Drawing />
     </Box>
   );

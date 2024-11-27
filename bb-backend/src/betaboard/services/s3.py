@@ -31,9 +31,19 @@ class S3Client(service.Service):
         return self.client.generate_presigned_url('get_object', Params={'Bucket': self.bucket, 'Key': uuid})
 
     def get_file(self, uuid):
+        """
+        Get file from S3 as bytes.
+
+        Args:
+            uuid: The file key in S3.
+
+        Returns:
+            bytes: The file contents.
+            None: If file not found.
+        """
         try:
             file_object = self.client.get_object(Bucket=self.bucket, Key=uuid)
-            return file_object['Body']
+            return file_object['Body'].read()  # Read the StreamingBody into bytes
         except self.client.exceptions.NoSuchKey:
             print('No such key: ', uuid)
             return None
