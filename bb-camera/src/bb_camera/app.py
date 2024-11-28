@@ -241,48 +241,46 @@ class CameraManager:
     @with_camera_lock(timeout=5.0)
     def start_streaming(self) -> typing.Generator[bytes, None, None]:
         """
-        Start streaming video feed using H264 encoder.
+        Start streaming video feed using MJPEG.
         
         Returns:
-            Generator yielding video stream data chunks.
+            Generator yielding JPEG frames.
         """
         try:
-            # Create FFmpeg command for MPEGTS stream
-            ffmpeg_cmd = (
-                "ffmpeg -f h264 -i pipe:0 "
-                "-c:v copy "
-                "-f mpegts pipe:1"
-            )
+            # Initialize encoder
+            self.encoder = picamera2.encoders.JpegEncoder()
+            self.camera.options["quality"] = self.JPEG_QUALITY["stream"]
             
-            # Start FFmpeg process
-            ffmpeg_process = subprocess.Popen(
-                ffmpeg_cmd.split(),
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
+            # Create buffered output
+            class StreamingOutput(io.BufferedIOBase):
+                def __init__(self):
+                    self.frame = None
+                    self.condition = threading.Condition()
 
-            # Create encoder and output
-            self.encoder = picamera2.encoders.H264Encoder(
-                bitrate=1000000,  # 1Mbps
-                repeat=False,
-                iperiod=15,
-            )
-            output = picamera2.outputs.FileOutput(ffmpeg_process.stdin)
+                def write(self, buf):
+                    with self.condition:
+                        self.frame = buf
+                        self.condition.notify_all()
             
-            # Start the encoder
-            self.camera.start_encoder(self.encoder, output)
+            output = StreamingOutput()
+            
+            # Start recording
+            self.camera.start_recording(
+                self.encoder, 
+                picamera2.outputs.FileOutput(output)
+            )
+            self.streaming = True
             
             try:
                 while True:
-                    data = ffmpeg_process.stdout.read(4096)  # Increased buffer size
-                    if not data:
-                        break
-                    yield data
+                    with output.condition:
+                        output.condition.wait()
+                        frame = output.frame
+                    yield (b'--frame\r\n'
+                          b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
             finally:
                 self.stop_streaming()
-                ffmpeg_process.terminate()
-                ffmpeg_process.wait(timeout=5.0)
+            
         except Exception as e:
             self.cleanup_camera()
             raise e
@@ -318,21 +316,11 @@ def capture_photo() -> flask.Response:
 
 @app.route('/video_feed')
 def video_feed() -> flask.Response:
-    """Stream video feed using H264."""
+    """Stream video feed using MJPEG."""
     try:
-        stream = camera_manager.start_streaming()
-
-        @flask.after_this_request
-        def cleanup(response):
-            try:
-                camera_manager.stop_streaming()
-            except Exception as e:
-                app.logger.error(f"Error during stream cleanup: {e}")
-            return response
-
         return flask.Response(
-            stream,
-            mimetype='video/mp2t'
+            camera_manager.start_streaming(),
+            mimetype='multipart/x-mixed-replace; boundary=frame'
         )
     except CameraLockTimeoutError as e:
         return flask.Response(str(e), status=400)

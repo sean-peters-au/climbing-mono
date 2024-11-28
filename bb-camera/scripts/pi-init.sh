@@ -7,6 +7,8 @@ set -e
 echo "Installing system dependencies..."
 sudo apt-get update
 sudo apt-get install -y \
+    python3-flask \
+    python3-flask-cors \
     python3-libcamera \
     python3-picamera2 \
     python3-pip \

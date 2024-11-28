@@ -4,15 +4,6 @@
 
 set -e
 
-# Install system dependencies
-echo "Installing system dependencies..."
-sudo apt-get update
-sudo apt-get install -y \
-    python3-flask \
-    python3-flask-cors \
-    python3-libcamera \
-    python3-picamera2
-
 # Create videos directory if it doesn't exist
 sudo mkdir -p /home/pi/videos
 sudo chown pi:pi /home/pi/videos
