@@ -1,6 +1,6 @@
 # betaboard-camera
 
-This is a very simple service that provides recent video feed queryable by timestamp.
+A camera service that includes features for: photos, recordings and video feeds.
 
 ## Setup
 
@@ -21,11 +21,8 @@ The deployment process happens in three steps:
 
 1. Initialize the Pi (first time only):
 ```bash
-# Copy initialization script to Pi
 scp scripts/pi-init.sh pi@bb-camera-pi:/tmp/
-# Run initialization
 ssh pi@bb-camera-pi "bash /tmp/pi-init.sh"
-# If prompted, reboot the Pi
 ssh pi@bb-camera-pi "sudo reboot"
 ```
 
@@ -45,12 +42,7 @@ cd /opt/betaboard-camera && ./install.sh
 Once installed, you can manage the service using standard systemd commands:
 
 ```bash
-# Check service status
 sudo systemctl status betaboard-camera
-
-# View logs
 sudo journalctl -u betaboard-camera
-
-# Restart service
 sudo systemctl restart betaboard-camera
 ```
