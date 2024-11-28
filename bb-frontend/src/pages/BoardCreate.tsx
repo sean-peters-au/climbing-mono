@@ -8,6 +8,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
+import { getCameraPhoto } from "../services/betaboard-camera/api";
 import API from "../services/betaboard-backend/api";
 import ImageAnnotator from "../components/ImageAnnotator";
 import Header from "../components/Header";
@@ -25,6 +26,18 @@ const BoardCreate: React.FC = () => {
     const file = e.target.files?.[0] || null;
     setImageFile(file);
     setAnnotations([]);
+  };
+
+  const handleCapturePhoto = async () => {
+    try {
+      const imageBlob = await getCameraPhoto();
+      const file = new File([imageBlob], 'captured_photo.jpg', { type: 'image/jpeg' });
+      setImageFile(file);
+      setAnnotations([]);
+    } catch (error) {
+      console.error("Error capturing photo:", error);
+      alert("Failed to capture photo. Please try again.");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,6 +96,12 @@ const BoardCreate: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12}>
+              <Button variant="contained" onClick={handleCapturePhoto}>
+                Capture Photo
+              </Button>
+              <Typography variant="body2" color="textSecondary">
+                or upload an image from your device:
+              </Typography>
               <Button variant="contained" component="label">
                 Upload Board Image
                 <input

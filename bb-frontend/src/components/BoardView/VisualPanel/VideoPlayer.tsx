@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/iframe-has-title */
 import React from 'react';
-import { CAMERA_STREAM_URL } from '../../../services/betaboard-camera/constants';
+import { CAMERA_STREAM_URL } from '../../../services/betaboard-camera/api';
 
 const VideoPlayer: React.FC = () => {
   return (

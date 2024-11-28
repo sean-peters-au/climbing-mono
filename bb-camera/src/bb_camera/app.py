@@ -122,11 +122,13 @@ def check_recording_duration() -> None:
         time.sleep(1)  # Check every second
 
 
-@app.route('/capture_photo')
+@app.route('/capture_photo', methods=['GET'])
 def capture_photo() -> flask.Response:
     """Capture a single photo and return it."""
+    print("Capturing photo")
     with camera_lock:
         try:
+            print("Capturing photo: Initializing camera")
             initialize_camera()
             stream = io.BytesIO()
             # Set high quality for photos
@@ -139,48 +141,63 @@ def capture_photo() -> flask.Response:
             raise e
 
 
-@app.route('/video_feed')
-def video_feed() -> flask.Response:
-    """Stream video feed using MJPEG."""
-    with camera_lock:
-        try:
-            initialize_camera()
-            
-            # Create a streaming output
-            output = StreamingOutput()
-            encoder = picamera2.encoders.JpegEncoder()
-            camera.start_recording(encoder, picamera2.outputs.FileOutput(output))
-            
-            def generate():
-                try:
-                    while True:
-                        with output.condition:
-                            output.condition.wait()
-                            frame = output.frame
-                        yield (b'--frame\r\n'
-                               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                finally:
-                    camera.stop_recording()
-            
-            return flask.Response(
-                generate(),
-                mimetype='multipart/x-mixed-replace; boundary=frame'
-            )
-            
-        except Exception as e:
-            cleanup_camera()
-            raise e
-
-
 class StreamingOutput(io.BufferedIOBase):
     def __init__(self):
         self.frame = None
         self.condition = threading.Condition()
+        self.active = True  # Add flag to track streaming status
 
     def write(self, buf):
         with self.condition:
             self.frame = buf
             self.condition.notify_all()
+
+    def stop(self):
+        self.active = False
+        with self.condition:
+            self.condition.notify_all()
+
+
+@app.after_request
+def after_request(response):
+    """Handle cleanup after client disconnects."""
+    cleanup_camera()
+    return response
+
+
+@app.route('/video_feed')
+def video_feed() -> flask.Response:
+    """Stream video feed using H264."""
+    with camera_lock:
+        try:
+            initialize_camera()
+            
+            # Create a pipe for streaming
+            output = picamera2.outputs.FfmpegOutput(
+                "-f h264 -preset ultrafast -tune zerolatency "
+                "-c:v libx264 -b:v 1000k "
+                "-x264-params keyint=15:min-keyint=15 "
+                "-f mpegts pipe:1",
+                pts=True
+            )
+            
+            # Start streaming with H264 encoder
+            encoder = picamera2.encoders.H264Encoder()
+            camera.start_encoder(encoder, output)
+            
+            @flask.after_this_request
+            def cleanup(response):
+                camera.stop_encoder()
+                return response
+            
+            return flask.Response(
+                output.start(),
+                mimetype='video/mp2t'
+            )
+            
+        except Exception as e:
+            cleanup_camera()
+            raise e
 
 
 @app.route('/start_recording', methods=['POST'])
