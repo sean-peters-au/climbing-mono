@@ -3,7 +3,7 @@ Description=BetaBoard Camera Service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 /opt/betaboard-camera/src/bb_camera/app.py
+ExecStart=/usr/bin/python3 -u /opt/betaboard-camera/src/bb_camera/app.py
 WorkingDirectory=/opt/betaboard-camera
 StandardOutput=inherit
 StandardError=inherit

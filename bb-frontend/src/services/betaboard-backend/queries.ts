@@ -85,5 +85,10 @@ export const recordingQueries = {
   getAnalysis: async (recordingIds: string[]): Promise<AnalysisData> => {
     const response = await API.post('/recording/analysis', { recording_ids: recordingIds });
     return response.data.analysis_results;
-  }
+  },
+
+  getRecordingVideoUrl: async (recordingId: string): Promise<string> => {
+    const response = await API.get(`/recording/${recordingId}/video`);
+    return response.data.video_url;
+  },
 };

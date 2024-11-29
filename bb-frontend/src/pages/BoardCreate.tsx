@@ -22,12 +22,6 @@ const BoardCreate: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setImageFile(file);
-    setAnnotations([]);
-  };
-
   const handleCapturePhoto = async () => {
     try {
       const imageBlob = await getCameraPhoto();
@@ -43,10 +37,18 @@ const BoardCreate: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!imageFile || annotations.length < 3) {
-      alert(
-        "Please upload an image and annotate at least three points to define the board."
-      );
+    if (!name.trim()) {
+      alert("Please enter a board name");
+      return;
+    }
+
+    if (!imageFile) {
+      alert("Please capture or upload an image");
+      return;
+    }
+
+    if (annotations.length < 3) {
+      alert("Please annotate at least three points to define the board");
       return;
     }
 
@@ -67,6 +69,7 @@ const BoardCreate: React.FC = () => {
         navigate("/");
       } catch (error) {
         console.error("Error creating board:", error);
+        alert("Failed to create board. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -91,26 +94,16 @@ const BoardCreate: React.FC = () => {
                 label="Board Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                required
                 fullWidth
               />
             </Grid>
             <Grid item xs={12}>
-              <Button variant="contained" onClick={handleCapturePhoto}>
+              <Button 
+                variant="contained" 
+                onClick={handleCapturePhoto}
+                sx={{ marginRight: 2 }}
+              >
                 Capture Photo
-              </Button>
-              <Typography variant="body2" color="textSecondary">
-                or upload an image from your device:
-              </Typography>
-              <Button variant="contained" component="label">
-                Upload Board Image
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  hidden
-                  required
-                />
               </Button>
             </Grid>
             {imageFile && (
@@ -142,7 +135,7 @@ const BoardCreate: React.FC = () => {
               <Button
                 type="submit"
                 variant="contained"
-                disabled={isLoading}
+                disabled={isLoading || !imageFile || !name.trim() || annotations.length < 3}
                 startIcon={isLoading ? <CircularProgress size={20} /> : null}
               >
                 {isLoading ? "Creating Board..." : "Create Board"}

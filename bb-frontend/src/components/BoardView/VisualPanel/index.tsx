@@ -6,9 +6,12 @@ import KinematicsOverlay from './KinematicsOverlay';
 import Drawing from './Drawing';
 import ThreeDView from './ThreeDView';
 import VideoPlayer from './VideoPlayer';
+import TwoDView from './TwoDView';
+import { CAMERA_STREAM_URL } from '../../../services/betaboard-camera/api';
 
-const WallImage: React.FC = () => {
-  const { wall, visualMode } = useContext(BoardViewContext)!;
+
+const VisualPanel: React.FC = () => {
+  const { visualMode } = useContext(BoardViewContext)!;
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -19,22 +22,11 @@ const WallImage: React.FC = () => {
       height="100%"
       sx={{ overflow: 'hidden' }}
     >
-      {visualMode === '2D' && (
-        <img
-          src={wall.image_url}
-          alt="Wall"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            display: 'block',
-          }}
-        />
-      )}
+      {visualMode === '2D' && <TwoDView />}
 
       {visualMode === '3D' && <ThreeDView />}
 
-      {visualMode === 'Video' && <VideoPlayer />}
+      {visualMode === 'Video' && <VideoPlayer videoUrl={CAMERA_STREAM_URL} format='jpg'/>}
 
       <HoldOverlay />
       <KinematicsOverlay />
@@ -43,4 +35,4 @@ const WallImage: React.FC = () => {
   );
 };
 
-export default WallImage;
+export default VisualPanel;

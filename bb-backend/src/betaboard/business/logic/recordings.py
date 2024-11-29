@@ -31,10 +31,8 @@ def start_recording(route_id: str) -> recordings_model.RecordingModel:
     camera_client = flask.current_app.extensions['camera_service']
 
     # Start recording on camera
-    print("Starting camera recording")
     if not camera_client.start_recording():
         raise ValueError("Failed to start camera recording")
-    print("Camera recording started")
 
     # Create recording entry
     recording_model = recording_dao.RecordingDAO.create_recording(
@@ -118,10 +116,15 @@ def get_recording(recording_id: str) -> recordings_model.RecordingModel:
     """Get a specific recording."""
     return recording_dao.RecordingDAO.get_recording_by_id(recording_id)
 
-
 def get_recordings(recording_ids: typing.List[str]) -> typing.List[recordings_model.RecordingModel]:
     """Get multiple recordings by their IDs."""
     return recording_dao.RecordingDAO.get_recordings_by_ids(recording_ids)
+
+def get_recording_video_url(recording_id: str) -> str:
+    """Get the video URL for a recording."""
+    recording = recording_dao.RecordingDAO.get_recording_by_id(recording_id)
+    s3_client = flask.current_app.extensions['s3']
+    return s3_client.get_file_url(recording.video_s3_key)
 
 def _generate_smooth_load(duration_seconds, sample_rate, negative_mean=True):
     num_samples = int(duration_seconds * sample_rate)

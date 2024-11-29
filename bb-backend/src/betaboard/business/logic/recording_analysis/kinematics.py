@@ -31,7 +31,7 @@ def analyze_video(video_data: bytes) -> Dict:
     )
 
     # Write video data to temporary file
-    with tempfile.NamedTemporaryFile(suffix='.h264') as temp_video:
+    with tempfile.NamedTemporaryFile(suffix='.mp4') as temp_video:
         temp_video.write(video_data)
         temp_video.flush()
         

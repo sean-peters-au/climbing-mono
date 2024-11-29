@@ -9,6 +9,8 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useRecordings, useStartRecording, useStopRecording } from '../../../hooks/useRecordings';
 import { Route } from '../../../types';
 import { QueryError } from '../../QueryError';
+import { recordingQueries } from '../../../services/betaboard-backend/queries';
+import RecordingVideoPlayer from './RecordingVideoPlayer';
 
 interface RouteRecordingsProps {
   route: Route;
@@ -25,6 +27,7 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
   const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
   const [isStoppingRecording, setIsStoppingRecording] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const { data: recordings, isLoading, error } = useRecordings(route.id);
   const { mutate: startRecording, isLoading: startingRecording } = useStartRecording();
@@ -82,10 +85,15 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
     setSelectedRecordingIds(ids);
   };
 
+  const handlePlay = async (recordingId: string) => {
+    const url = await recordingQueries.getRecordingVideoUrl(recordingId);
+    setVideoUrl(url);
+  };
+
   const columns: GridColDef[] = [
     {
       field: 'start_time',
-      headerName: 'Start Time',
+      headerName: 'Date',
       width: 200,
       valueGetter: (params) => new Date(params).toLocaleString(),
     },
@@ -99,7 +107,17 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
       field: 'status',
       headerName: 'Status',
       width: 120,
-    }
+    },
+    {
+      field: 'play',
+      headerName: 'Play',
+      width: 120,
+      renderCell: (params) => (
+        <Button variant="outlined" onClick={() => handlePlay(params.row.id)}>
+          Play
+        </Button>
+      ),
+    },
   ];
 
   if (isLoading) {
@@ -145,6 +163,11 @@ const RouteRecordings: React.FC<RouteRecordingsProps> = ({
       ) : (
         <Typography variant="body2">No recordings available.</Typography>
       )}
+
+      <RecordingVideoPlayer
+        videoUrl={videoUrl}
+        onClose={() => setVideoUrl(null)}
+      />
     </Box>
   );
 };

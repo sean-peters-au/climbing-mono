@@ -22,6 +22,8 @@ class CameraClient(service.Service):
             requests.RequestException: If the camera service request fails.
         """
         response = requests.post(f"{self.url}/start_recording")
+        if response.status_code != 200:
+            print(response.text)
         response.raise_for_status()
         return response.status_code == 200
 
@@ -36,5 +38,7 @@ class CameraClient(service.Service):
             requests.RequestException: If the camera service request fails.
         """
         response = requests.post(f"{self.url}/stop_recording")
+        if response.status_code != 200:
+            print(response.text)
         response.raise_for_status()
         return response.content

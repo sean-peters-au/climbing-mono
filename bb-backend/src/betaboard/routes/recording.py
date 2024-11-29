@@ -18,7 +18,6 @@ def start_recording() -> flask.Response:
     Returns:
         Response: JSON response with the recording ID.
     """
-    print("Starting recording")
     class StartRecordingSchema(marshmallow.Schema):
         route_id = marshmallow.fields.Str(required=True)
 
@@ -52,6 +51,22 @@ def stop_recording(recording_id: str) -> flask.Response:
         return flask.jsonify(recording_model.asdict()), 200
     except ValueError as e:
         return flask.jsonify({'error': str(e)}), 404
+
+
+@recording_bp.route('/recording/<recording_id>/video', methods=['GET'])
+def get_recording_video(recording_id: str) -> flask.Response:
+    """
+    Get the video URL for a recording.
+
+    Args:
+        recording_id (str): The ID of the recording to get the video URL for.
+
+    Returns:
+        Response: JSON response with the video URL.
+    """
+    video_url = recordings_logic.get_recording_video_url(recording_id)
+
+    return flask.jsonify({'video_url': video_url}), 200
 
 @recording_bp.route('/recording/analysis', methods=['POST'])
 def analyze_recordings():

@@ -27,5 +27,12 @@ rsync -aq --exclude '.git' \
 echo "Setting permissions..."
 ssh "$PI_TARGET" "sudo chown -R pi:pi $REMOTE_DIR && sudo chmod +x $REMOTE_DIR/scripts/*.sh"
 
-echo "Deployment complete! On the Pi, run:"
-echo "cd $REMOTE_DIR && sudo ./scripts/install.sh"
+echo "Installing service..."
+ssh "$PI_TARGET" "sudo cp $REMOTE_DIR/scripts/betaboard-camera.service /etc/systemd/system/"
+ssh "$PI_TARGET" "sudo systemctl daemon-reload"
+ssh "$PI_TARGET" "sudo systemctl enable betaboard-camera"
+
+echo "Starting service..."
+ssh "$PI_TARGET" "sudo systemctl restart betaboard-camera"
+
+echo "Installation complete!"

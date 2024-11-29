@@ -1,5 +1,6 @@
 import uuid
 import boto3
+import os
 
 from betaboard.services import service
 
@@ -15,6 +16,19 @@ class S3Client(service.Service):
             aws_secret_access_key=app.config['S3']['AWS_SECRET_ACCESS_KEY'],
         )
         self.bucket = app.config['S3']['BUCKET']
+
+        self.client.put_bucket_cors(
+            Bucket=self.bucket,
+            CORSConfiguration={
+                'CORSRules': [{
+                    'AllowedHeaders': ['*'],
+                    'AllowedMethods': ['GET'],
+                    'AllowedOrigins': ['*'],
+                    'ExposeHeaders': ['ETag'],
+                    'MaxAgeSeconds': 3000
+                }]
+            }
+        )
         app.extensions['s3'] = self
 
     def _generate_file_key(self):

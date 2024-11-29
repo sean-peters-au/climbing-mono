@@ -7,6 +7,7 @@ import threading
 import time
 import typing
 import subprocess
+import uuid
 
 import flask
 import flask_cors
@@ -38,12 +39,15 @@ def with_camera_lock(timeout: float = 5.0):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            unique_id = uuid.uuid4()
+            print(f"[{unique_id}] Acquiring camera lock")
             acquired = _camera_lock.acquire(timeout=timeout)
             if not acquired:
                 raise CameraLockTimeoutError(f"Could not acquire camera lock within {timeout} seconds.")
             try:
                 return func(*args, **kwargs)
             finally:
+                print(f"[{unique_id}] Releasing camera lock")
                 _camera_lock.release()
         return wrapper
     return decorator
@@ -90,19 +94,26 @@ class CameraManager:
         self.camera: typing.Optional[picamera2.Picamera2] = None
         self.streaming = False
         self.recording = False
-        self.encoder: typing.Optional[picamera2.encoders.H264Encoder] = None
         self.recording_start_time: typing.Optional[float] = None
         self.current_recording_file: typing.Optional[str] = None
         self.duration_thread: typing.Optional[threading.Thread] = None
         self.video_config: typing.Optional[picamera2.Configuration] = None
         self.photo_config: typing.Optional[picamera2.Configuration] = None
 
-    @with_camera_lock(timeout=5.0)
     def initialize_camera(self) -> None:
         """Initialize the camera if not already initialized."""
         if self.camera is None:
             try:
                 self.camera = picamera2.Picamera2()
+
+                # Initialize encoders
+                self.jpeg_encoder = picamera2.encoders.JpegEncoder()
+                self.h264_encoder = picamera2.encoders.H264Encoder(
+                    bitrate=self.RECORDING_BITRATE,
+                    repeat=False,
+                    iperiod=10
+                )
+                self.h264_encoder.frame_skip_count = 10
 
                 # Configure camera with standard resolution and framerate
                 self.video_config = self.camera.create_video_configuration(
@@ -131,13 +142,14 @@ class CameraManager:
                 self.cleanup_camera()
                 raise e
 
-    @with_camera_lock(timeout=5.0)
     def cleanup_camera(self) -> None:
         """Clean up camera resources."""
         if self.camera:
             try:
-                if self.recording and self.encoder:
-                    self.encoder.stop()
+                if self.h264_encoder:
+                    self.h264_encoder.stop()
+                if self.jpeg_encoder:
+                    self.jpeg_encoder.stop()
                 self.camera.stop()
                 self.camera.close()
             except:
@@ -150,13 +162,13 @@ class CameraManager:
                     except:
                         pass  # Best effort cleanup
                 self.camera = None
-                self.encoder = None
+                self.jpeg_encoder = None
+                self.h264_encoder = None
                 self.streaming = False
                 self.recording = False
                 self.current_recording_file = None
                 self.recording_start_time = None
 
-    @with_camera_lock(timeout=5.0)
     def check_recording_duration(self) -> None:
         """Check recording duration and stop if exceeded maximum."""
         while self.recording and self.recording_start_time:
@@ -164,7 +176,7 @@ class CameraManager:
             if current_duration >= self.MAX_RECORDING_DURATION:
                 with self.camera_lock:
                     try:
-                        if self.recording and self.encoder:
+                        if self.recording and self.h264_encoder:
                             self.camera.stop_recording()
                             self.recording = False
                             self.recording_start_time = None
@@ -187,6 +199,7 @@ class CameraManager:
     @with_camera_lock(timeout=5.0)
     def capture_photo(self) -> io.BytesIO:
         """Capture a single photo and return it as a BytesIO stream."""
+        print('Capturing photo')
         stream = io.BytesIO()
         self.camera.switch_mode(self.photo_config)
         time.sleep(0.5) # Allow focus to adjust
@@ -200,18 +213,13 @@ class CameraManager:
     @with_camera_lock(timeout=5.0)
     def start_recording(self) -> None:
         """Start recording video to a file."""
+        print('Starting recording')
         if not self.recording:
             temp_file = tempfile.NamedTemporaryFile(suffix='.h264', delete=False)
             self.current_recording_file = temp_file.name
             temp_file.close()
 
-            self.encoder = picamera2.encoders.H264Encoder(
-                bitrate=self.RECORDING_BITRATE,
-                repeat=False,
-                iperiod=10
-            )
-            self.encoder.frame_skip_count = 10
-            self.camera.start_recording(self.encoder, self.current_recording_file)
+            self.camera.start_recording(self.h264_encoder, self.current_recording_file)
             self.recording = True
             self.recording_start_time = time.time()
 
@@ -222,18 +230,41 @@ class CameraManager:
     @with_camera_init
     @with_camera_lock(timeout=5.0)
     def stop_recording(self) -> io.BytesIO:
-        """Stop recording and return the recorded video as BytesIO."""
+        """Stop recording and return the recorded video as MP4."""
         if self.recording and self.current_recording_file:
             self.camera.stop_recording()
             self.recording = False
 
-            with open(self.current_recording_file, 'rb') as f:
-                video_data = f.read()
+            # Create temporary file for MP4
+            with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as mp4_file:
+                mp4_path = mp4_file.name
 
-            os.unlink(self.current_recording_file)
-            self.current_recording_file = None
+            try:
+                # Convert H264 to MP4 using ffmpeg
+                subprocess.run([
+                    'ffmpeg',
+                    '-i', self.current_recording_file,  # Input H264 file
+                    '-c:v', 'copy',  # Copy video stream without re-encoding
+                    '-f', 'mp4',     # Force MP4 format
+                    '-y',  # Overwrite existing file
+                    mp4_path
+                ], check=True)
 
-            return io.BytesIO(video_data)
+                # Read the MP4 file
+                with open(mp4_path, 'rb') as f:
+                    video_data = f.read()
+
+                # Clean up temporary files
+                os.unlink(self.current_recording_file)
+                os.unlink(mp4_path)
+                self.current_recording_file = None
+
+                return io.BytesIO(video_data)
+            except Exception as e:
+                # Clean up on error
+                if os.path.exists(mp4_path):
+                    os.unlink(mp4_path)
+                raise e
         else:
             raise RuntimeError("No recording in progress")
 
@@ -247,10 +278,6 @@ class CameraManager:
             Generator yielding JPEG frames.
         """
         try:
-            # Initialize encoder
-            self.encoder = picamera2.encoders.JpegEncoder()
-            self.camera.options["quality"] = self.JPEG_QUALITY["stream"]
-            
             # Create buffered output
             class StreamingOutput(io.BufferedIOBase):
                 def __init__(self):
@@ -266,7 +293,7 @@ class CameraManager:
             
             # Start recording
             self.camera.start_recording(
-                self.encoder, 
+                self.jpeg_encoder, 
                 picamera2.outputs.FileOutput(output)
             )
             self.streaming = True
@@ -289,7 +316,7 @@ class CameraManager:
     @with_camera_lock(timeout=5.0)
     def stop_streaming(self) -> None:
         """Stop streaming video feed."""
-        if self.encoder:
+        if self.jpeg_encoder:
             self.camera.stop_encoder()
 
 
@@ -343,7 +370,7 @@ def stop_recording() -> flask.Response:
         video_data = camera_manager.stop_recording()
         return flask.send_file(
             video_data,
-            mimetype='video/h264'
+            mimetype='video/mp4'
         )
     except CameraLockTimeoutError as e:
         return flask.Response(str(e), status=400)

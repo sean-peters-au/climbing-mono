@@ -1,12 +1,12 @@
 import React from 'react';
 import { Grid, Box } from '@mui/material';
-import WallImage from '../components/BoardView/VisualPanel/WallImage';
 import { useParams } from 'react-router-dom';
 import { useWall } from '../hooks/useWall';
 import Header from '../components/Header';
 import { BoardViewProvider } from '../components/BoardView/BoardViewContext';
 import BoardViewPanel from '../components/BoardView';
 import VisualModeSelect from '../components/BoardView/VisualPanel/VisualModeSelect';
+import VisualPanel from '../components/BoardView/VisualPanel';
 
 const BoardView: React.FC = () => {
   const { wallId } = useParams<{ wallId: string }>();
@@ -38,7 +38,7 @@ const BoardView: React.FC = () => {
               }}
             >
               <VisualModeSelect />
-              <WallImage />
+              <VisualPanel />
             </Box>
           </Grid>
 
