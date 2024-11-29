@@ -5,9 +5,10 @@ import { Route } from '../../../types';
 import { BoardViewContext } from '../BoardViewContext';
 
 const RoutesSection: React.FC = () => {
-  const { wall, selectedRoute, setSelectedRoute } = useContext(BoardViewContext)!;
+  const { wall, selectedRoute, setSelectedRoute, setSelectedHolds } = useContext(BoardViewContext)!;
 
   const onRouteSelect = (route: Route | null) => {
+    setSelectedHolds([]);
     setSelectedRoute(route);
   };
 

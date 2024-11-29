@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Accordion,
@@ -11,7 +11,6 @@ import RoutesSection from './RoutesSection';
 import BetaAnalysisSection from './BetaAnalysisSection';
 
 const RoutesTab: React.FC = () => {
-
   const [expanded, setExpanded] = useState<string | false>('routes');
 
   const handleAccordionChange =

@@ -9,7 +9,7 @@ interface BoardViewContextProps {
   visualMode: VisualMode;
   setVisualMode: (mode: VisualMode) => void;
   showAllHolds: boolean;
-  toggleShowAllHolds: () => void;
+  setShowAllHolds: (value: boolean) => void;
   selectedHolds: string[];
   setSelectedHolds: (holds: string[]) => void;
   handleHoldClick: (holdId: string) => void;
@@ -93,11 +93,8 @@ export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }
     };
   }, [isPlaying, playbackFrames, frameRate]);
 
-  const toggleShowAllHolds = () => {
-    setShowAllHolds((prev) => !prev);
-  };
-
   const handleHoldClick = (holdId: string) => {
+    setSelectedRoute(null);
     setSelectedHolds((prevHolds) =>
       prevHolds.includes(holdId)
         ? prevHolds.filter((id) => id !== holdId)
@@ -115,7 +112,7 @@ export const BoardViewProvider: FC<BoardViewProviderProps> = ({ wall, children }
         visualMode,
         setVisualMode,
         showAllHolds,
-        toggleShowAllHolds,
+        setShowAllHolds,
         selectedHolds: selectedHolds,
         setSelectedHolds,
         handleHoldClick,

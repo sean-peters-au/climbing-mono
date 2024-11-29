@@ -92,6 +92,7 @@ class StreamingCameraManager(BaseCameraManager):
         super().__init__()
         self.video_config = None
         self.jpeg_encoder = None
+        self.streaming = False
 
     def initialize(self):
         super().initialize()
@@ -104,15 +105,22 @@ class StreamingCameraManager(BaseCameraManager):
         )
         self.camera.configure(self.video_config)
         self.camera.start()
+        time.sleep(0.5)  # Give camera time to settle
         self.jpeg_encoder = picamera2.encoders.JpegEncoder(q=self.JPEG_QUALITY)
 
     def cleanup(self):
-        if self.jpeg_encoder:
-            try:
+        """Ensure proper cleanup sequence."""
+        try:
+            if self.streaming:
+                self.camera.stop_recording()
+                self.streaming = False
+            if self.jpeg_encoder:
                 self.camera.stop_encoder()
-            except:
-                pass
-        super().cleanup()
+                self.jpeg_encoder = None
+        except:
+            pass  # Best effort cleanup
+        finally:
+            super().cleanup()
 
     def stream(self) -> typing.Generator[bytes, None, None]:
         """Stream MJPEG video."""
@@ -127,15 +135,18 @@ class StreamingCameraManager(BaseCameraManager):
                     self.condition.notify_all()
 
         output = StreamingOutput()
-        self.camera.start_recording(self.jpeg_encoder, picamera2.outputs.FileOutput(output))
-
         try:
+            self.camera.start_recording(self.jpeg_encoder, picamera2.outputs.FileOutput(output))
+            self.streaming = True
+
             while True:
                 with output.condition:
                     output.condition.wait()
                     frame = output.frame
                 yield (b'--frame\r\n'
                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        except:
+            raise
         finally:
             self.cleanup()
 
@@ -275,6 +286,7 @@ def capture_photo() -> flask.Response:
 @app.route('/video_feed')
 def video_feed() -> flask.Response:
     """Stream video feed using MJPEG."""
+    camera = None
     with camera_lock:
         try:
             camera = StreamingCameraManager()

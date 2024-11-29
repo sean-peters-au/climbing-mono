@@ -1,19 +1,10 @@
 import React, { useContext, useMemo } from 'react';
-import { Point } from '../../../../types';
 import HoldHighlights from './HoldHighlights';
 import HoldVectors from './HoldVectors';
 import { BoardViewContext } from '../../BoardViewContext';
 import { HoldAnnotations } from './HoldAnnotations';
 
-interface HoldOverlayProps {
-  onMissingHoldClick?: (coords: Point) => void;
-  missingHoldMode?: boolean;
-}
-
-const HoldOverlay: React.FC<HoldOverlayProps> = ({
-  onMissingHoldClick,
-  missingHoldMode = false,
-}) => {
+const HoldOverlay: React.FC = () => {
   const {
     wall,
     holds,
@@ -28,15 +19,6 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
     return selectedRoute ? selectedRoute.holds.map((hold) => hold.id) : [];
   }, [selectedRoute]);
 
-  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (missingHoldMode && onMissingHoldClick) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      const x = ((event.clientX - rect.left) / rect.width) * wall.width;
-      const y = ((event.clientY - rect.top) / rect.height) * wall.height;
-      onMissingHoldClick({ x, y });
-    }
-  };
-
   return (
     <div
       style={{
@@ -45,10 +27,9 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
         left: 0,
         width: '100%',
         height: '100%',
-        cursor: missingHoldMode ? 'crosshair' : 'default',
+        cursor: 'crosshair',
         pointerEvents: 'none',
       }}
-      onClick={handleOverlayClick}
     >
       <svg
         style={{
@@ -65,7 +46,6 @@ const HoldOverlay: React.FC<HoldOverlayProps> = ({
           showAllHolds={showAllHolds}
           climbHoldIds={climbHoldIds}
           onHoldClick={handleHoldClick}
-          missingHoldMode={missingHoldMode}
         />
 
         <HoldVectors/>
