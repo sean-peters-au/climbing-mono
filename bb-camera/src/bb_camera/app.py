@@ -338,6 +338,9 @@ def stop_recording() -> flask.Response:
         try:
             video_data = _recording_camera.stop()
             return flask.send_file(video_data, mimetype='video/mp4')
+        except Exception as e:
+            print(f"Error stopping recording: {str(e)}")  # Debug print
+            return str(e), 500
         finally:
             _recording_camera.cleanup()
             _recording_camera = None

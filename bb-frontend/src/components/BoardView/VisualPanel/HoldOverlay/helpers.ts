@@ -20,7 +20,7 @@ export const createHoldImage = (
 ): string => {
   const width = bbox[2];
   const height = bbox[3];
-  const borderThickness = 2; // Define the border thickness
+  const borderThickness = 2; // Updated border thickness to 5 pixels
 
   // Expand canvas size to accommodate the border
   const canvasWidth = width + borderThickness * 2;
@@ -33,17 +33,41 @@ export const createHoldImage = (
   if (!context) return '';
 
   if (mask && mask.length && mask[0].length) {
+
+    // Build a full mask that includes the border with mask values in the center
+    const canvasMask = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(false));
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        canvasMask[borderThickness + y][borderThickness + x] = mask[y][x];
+      }
+    }
+
+    // Function to determine if a pixel is around the border of the mask
+    // Returns true if is not in the mask but is within borderThickness of the mask
+    const isOnMaskBorder = (mask: boolean[][], x: number, y: number): boolean => {
+      const onMask = mask[y]?.[x];
+      const isWithinBorderThickness = (x: number, y: number): boolean => {
+        for (let dx = -borderThickness; dx <= borderThickness; dx++) {
+          for (let dy = -borderThickness; dy <= borderThickness; dy++) {
+            if (mask[y + dy]?.[x + dx]) return true;
+          }
+        }
+        return false;
+      };
+      return !onMask && isWithinBorderThickness(x, y);
+    };
+
     // Function to create ImageData from mask with specified color
-    const createMaskImageData = (color: { r: number; g: number; b: number }): ImageData => {
-      const imageData = context.createImageData(width, height);
-      for (let row = 0; row < height; row++) {
-        for (let col = 0; col < width; col++) {
-          const index = (row * width + col) * 4;
-          if (mask[row][col]) {
+    const createBorderImageData = (color: { r: number; g: number; b: number }): ImageData => {
+      const imageData = context.createImageData(canvasWidth, canvasHeight);
+      for (let row = 0; row < canvasHeight; row++) {
+        for (let col = 0; col < canvasWidth; col++) {
+          const index = (row * canvasWidth + col) * 4;
+          if (isOnMaskBorder(canvasMask, col, row)) {
             imageData.data[index] = color.r;     // R
             imageData.data[index + 1] = color.g; // G
             imageData.data[index + 2] = color.b; // B
-            imageData.data[index + 3] = 200;     // A (fully opaque)
+            imageData.data[index + 3] = 255;     // A (fully opaque)
           } else {
             imageData.data[index + 3] = 0;       // Transparent
           }
@@ -53,28 +77,16 @@ export const createHoldImage = (
     };
 
     // Create the border mask image data
-    const borderColor = { r: 0, g: 0, b: 0 }; // Black
-    const borderImageData = createMaskImageData(borderColor);
-
-    // Create the fill mask image data
-    const fillColor = { r: 255, g: 0, b: 0 }; // Red
-    const fillImageData = createMaskImageData(fillColor);
+    const borderColor = { r: 255, g: 0, b: 0 }; // Red
+    const borderImageData = createBorderImageData(borderColor);
 
     // Create offscreen canvas for border mask
     const borderMaskCanvas = document.createElement('canvas');
-    borderMaskCanvas.width = width;
-    borderMaskCanvas.height = height;
+    borderMaskCanvas.width = canvasWidth;
+    borderMaskCanvas.height = canvasHeight;
     const borderMaskContext = borderMaskCanvas.getContext('2d');
     if (!borderMaskContext) return '';
     borderMaskContext.putImageData(borderImageData, 0, 0);
-
-    // Create offscreen canvas for fill mask
-    const fillMaskCanvas = document.createElement('canvas');
-    fillMaskCanvas.width = width;
-    fillMaskCanvas.height = height;
-    const fillMaskContext = fillMaskCanvas.getContext('2d');
-    if (!fillMaskContext) return '';
-    fillMaskContext.putImageData(fillImageData, 0, 0);
 
     // Draw the border by drawing the border mask multiple times with offsets
     for (let dx = -borderThickness; dx <= borderThickness; dx++) {
@@ -84,8 +96,8 @@ export const createHoldImage = (
           borderMaskCanvas,
           0,
           0,
-          width,
-          height,
+          canvasWidth,
+          canvasHeight,
           borderThickness + dx,
           borderThickness + dy,
           width,
@@ -94,37 +106,15 @@ export const createHoldImage = (
       }
     }
 
-    // Now draw the fill mask at the center
-    context.drawImage(
-      fillMaskCanvas,
-      0,
-      0,
-      width,
-      height,
-      borderThickness,
-      borderThickness,
-      width,
-      height
-    );
+    // No fill mask is drawn, resulting in only the border being visible
   } else {
-    // Fallback: draw a rectangle using the bbox dimensions
-    // Set border color
-    context.strokeStyle = 'black';
+    // Fallback: draw a rectangle with only border
+    context.strokeStyle = 'red';
     context.lineWidth = borderThickness;
 
-    // Set fill color
-    context.fillStyle = 'red';
-
-    // Draw filled rectangle with border
-    context.fillRect(
-      borderThickness,
-      borderThickness,
-      width,
-      height
-    );
     context.strokeRect(
-      borderThickness,
-      borderThickness,
+      borderThickness / 2,
+      borderThickness / 2,
       width,
       height
     );

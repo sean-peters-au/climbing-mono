@@ -8,9 +8,6 @@
 
 - bb-cv should probably be refactored out of flask into a pure lambda. We can trigger it via SQS, and the backend hit SQS to get the results.
 - Hold highlighting should just be a border
-- Show all holds should set selected holds to []
-- Selecting a route should clear selected holds
-- In general hold selection clearing needs to be a more consistent experience
 - Improve Hold Management UI/UX
 - Fine-tuning to improve model performance?
 

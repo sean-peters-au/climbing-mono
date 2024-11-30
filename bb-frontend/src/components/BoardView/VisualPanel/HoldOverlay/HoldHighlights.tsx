@@ -30,17 +30,18 @@ const HoldHighlights: React.FC<HoldHighlightsProps> = ({
         const isClimbHold = climbHoldIds.includes(holdId);
         const isVisible = showAllHolds || isSelected || isClimbHold;
         const [x, y, width, height] = hold.bbox;
+        const borderThickness = 5; // Must match the borderThickness in helpers.ts
 
         return (
           <image
             key={holdId}
             href={holdImages[holdId]}
-            x={x}
-            y={y}
-            width={width}
-            height={height}
+            x={x - borderThickness} // Offset x to center the border
+            y={y - borderThickness} // Offset y to center the border
+            width={width + borderThickness * 2} // Increase width to accommodate border
+            height={height + borderThickness * 2} // Increase height to accommodate border
             style={{
-              opacity: isVisible ? (isSelected || isClimbHold ? 0.8 : 0.5) : 0,
+              opacity: isVisible ? 0.8 : 0, // Set consistent opacity
               cursor: missingHoldMode ? 'not-allowed' : 'pointer',
               pointerEvents: missingHoldMode ? 'none' : 'all',
             }}
