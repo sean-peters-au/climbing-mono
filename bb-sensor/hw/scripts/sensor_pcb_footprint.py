@@ -12,7 +12,7 @@ SKiDL script for a Wi-Fi load-sensor PCB with:
 All pin 'func' assignments are omitted so it doesn't conflict with older SKiDL versions.
 """
 
-from skidl import SKIDL, Pin, Part, Net, generate_netlist
+from skidl import SKIDL, Pin, Part, Net, generate_netlist, generate_schematic, generate_pcb
 
 NUM_SENSORS = 4
 SENSOR_BRIDGE_RES_VAL = "1k"
@@ -201,4 +201,6 @@ for i in range(NUM_SENSORS):
 # Generate netlist
 #
 if __name__ == "__main__":
-    generate_netlist("climbing_hold_sensors.net")
+    generate_netlist(file_="climbing_hold_sensors.net")
+    generate_schematic(file_="climbing_hold_sensors.kicad_sch")
+    generate_pcb(file_="climbing_hold_sensors.kicad_pcb")
