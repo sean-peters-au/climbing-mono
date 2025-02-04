@@ -1,23 +1,14 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext } from 'react';
 import HoldHighlights from './HoldHighlights';
 import HoldVectors from './HoldVectors';
 import { BoardViewContext } from '../../BoardViewContext';
 import { HoldAnnotations } from './HoldAnnotations';
+import KinematicsOverlay from './KinematicsOverlay';
 
-const HoldOverlay: React.FC = () => {
+const VisualPanelOverlays: React.FC = () => {
   const {
     wall,
-    holds,
-    selectedHolds,
-    showAllHolds,
-    handleHoldClick,
-    selectedRoute,
   } = useContext(BoardViewContext)!;
-
-  // Compute climbHoldIds from selectedRoute
-  const climbHoldIds = useMemo(() => {
-    return selectedRoute ? selectedRoute.holds.map((hold) => hold.id) : [];
-  }, [selectedRoute]);
 
   return (
     <div
@@ -40,20 +31,16 @@ const HoldOverlay: React.FC = () => {
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Render Hold Highlights */}
-        <HoldHighlights
-          holds={holds}
-          selectedHolds={selectedHolds}
-          showAllHolds={showAllHolds}
-          climbHoldIds={climbHoldIds}
-          onHoldClick={handleHoldClick}
-        />
+        <HoldHighlights/>
 
         <HoldVectors/>
 
         <HoldAnnotations/>
+
+        <KinematicsOverlay/>
       </svg>
     </div>
   );
 };
 
-export default HoldOverlay;
+export default VisualPanelOverlays;

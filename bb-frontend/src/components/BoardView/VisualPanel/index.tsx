@@ -1,13 +1,13 @@
 import React, { useContext, useRef } from 'react';
 import { Box } from '@mui/material';
 import { BoardViewContext } from '../BoardViewContext';
-import HoldOverlay from './HoldOverlay';
-import KinematicsOverlay from './KinematicsOverlay';
+import HoldOverlay from './VisualPanelOverlays';
 import Drawing from './Drawing';
 import ThreeDView from './ThreeDView';
 import VideoPlayer from './VideoPlayer';
 import TwoDView from './TwoDView';
 import { CAMERA_STREAM_URL } from '../../../services/betaboard-camera/api';
+import VisualPanelOverlays from './VisualPanelOverlays';
 
 
 const VisualPanel: React.FC = () => {
@@ -28,8 +28,7 @@ const VisualPanel: React.FC = () => {
 
       {visualMode === 'Video' && <VideoPlayer videoUrl={CAMERA_STREAM_URL} format='jpg'/>}
 
-      <HoldOverlay />
-      <KinematicsOverlay />
+      <VisualPanelOverlays />
       <Drawing />
     </Box>
   );
