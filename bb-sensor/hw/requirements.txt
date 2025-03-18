@@ -1,0 +1,54 @@
+aiohappyeyeballs @ file:///home/conda/feedstock_root/build_artifacts/aiohappyeyeballs_1733331917983/work
+aiohttp @ file:///Users/runner/miniforge3/conda-bld/aiohttp_1734596917178/work
+aiosignal @ file:///home/conda/feedstock_root/build_artifacts/aiosignal_1734342155601/work
+asttokens @ file:///home/conda/feedstock_root/build_artifacts/asttokens_1733250440834/work
+async-timeout @ file:///home/conda/feedstock_root/build_artifacts/async-timeout_1733235340728/work
+attrs @ file:///home/conda/feedstock_root/build_artifacts/attrs_1734348785146/work
+cadquery @ file:///home/conda/feedstock_root/build_artifacts/cadquery_1734878234206/work
+casadi==3.6.7
+decorator @ file:///home/conda/feedstock_root/build_artifacts/decorator_1733236420667/work
+deprecation==2.1.0
+exceptiongroup @ file:///home/conda/feedstock_root/build_artifacts/exceptiongroup_1733208806608/work
+executing @ file:///home/conda/feedstock_root/build_artifacts/executing_1733569351617/work
+ezdxf @ file:///Users/runner/miniforge3/conda-bld/ezdxf_1714721547736/work
+fonttools @ file:///Users/runner/miniforge3/conda-bld/fonttools_1735335839022/work
+frozenlist @ file:///Users/runner/miniforge3/conda-bld/frozenlist_1729699532664/work
+future==1.0.0
+graphviz==0.20.3
+hierplace==1.1.0
+idna @ file:///home/conda/feedstock_root/build_artifacts/idna_1733211830134/work
+ipython @ file:///home/conda/feedstock_root/build_artifacts/ipython_1734788142186/work
+jedi @ file:///home/conda/feedstock_root/build_artifacts/jedi_1733300866624/work
+kinet2pcb==1.1.2
+kinparse==1.2.2
+loguru @ file:///Users/runner/miniforge3/conda-bld/loguru_1725349726692/work
+matplotlib-inline @ file:///home/conda/feedstock_root/build_artifacts/matplotlib-inline_1733416936468/work
+msgpack @ file:///Users/runner/miniforge3/conda-bld/msgpack-python_1725975020701/work
+multidict @ file:///Users/runner/miniforge3/conda-bld/multidict_1729065522203/work
+multimethod @ file:///home/conda/feedstock_root/build_artifacts/multimethod_1677278728711/work
+munkres==1.1.4
+nlopt==2.9.0
+nptyping @ file:///home/conda/feedstock_root/build_artifacts/nptyping_1734531198637/work
+numpy @ file:///Users/runner/miniforge3/conda-bld/numpy_1707225416355/work/dist/numpy-1.26.4-cp310-cp310-macosx_11_0_arm64.whl#sha256=14c628943f67e9c10d22faa9c1cdcbf69c3192e88f2f597d03b77a252e589567
+packaging==24.2
+parso @ file:///home/conda/feedstock_root/build_artifacts/parso_1733271261340/work
+pexpect @ file:///home/conda/feedstock_root/build_artifacts/pexpect_1733301927746/work
+pickleshare @ file:///home/conda/feedstock_root/build_artifacts/pickleshare_1733327343728/work
+prompt_toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1733302527033/work
+propcache @ file:///Users/runner/miniforge3/conda-bld/propcache_1733391872510/work
+ptyprocess @ file:///home/conda/feedstock_root/build_artifacts/ptyprocess_1733302279685/work/dist/ptyprocess-0.7.0-py2.py3-none-any.whl#sha256=92c32ff62b5fd8cf325bec5ab90d7be3d2a8ca8c8a3813ff487a8d2002630d1f
+pure_eval @ file:///home/conda/feedstock_root/build_artifacts/pure_eval_1733569405015/work
+Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1733221634316/work
+pyparsing==3.2.0
+scipy @ file:///Users/runner/miniforge3/conda-bld/scipy-split_1733620615873/work/dist/scipy-1.14.1-cp310-cp310-macosx_11_0_arm64.whl#sha256=bbdccbc7ea3386b7168b5c0befb3b5ac7fd84d8fb7571dea567e2a3ea6da6172
+sexpdata==1.0.0
+skidl==2.0.1
+stack_data @ file:///home/conda/feedstock_root/build_artifacts/stack_data_1733569443808/work
+traitlets @ file:///home/conda/feedstock_root/build_artifacts/traitlets_1733367359838/work
+typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/typing_extensions_1733188668063/work
+typish @ file:///home/conda/feedstock_root/build_artifacts/typish_1734445852179/work
+unicodedata2 @ file:///Users/runner/miniforge3/conda-bld/unicodedata2_1729704615031/work
+vtk==9.2.6
+wcwidth @ file:///home/conda/feedstock_root/build_artifacts/wcwidth_1733231326287/work
+wslink @ file:///home/conda/feedstock_root/build_artifacts/wslink_1733083528392/work
+yarl @ file:///Users/runner/miniforge3/conda-bld/yarl_1733428848197/work

@@ -3,34 +3,53 @@
 SKiDL script for a Wi-Fi load-sensor PCB with:
   - ESP32 (inline-defined)
   - 4x HX711 amplifiers (inline-defined)
-  - 4 SEN-10245 half-bridge load cells, w/ bridging resistors from "Device" library
+  - 4 SEN-10245 half-bridge load cells, w/ bridging resistors
   - A barrel jack for 5 V input (inline)
   - A 3.3 V linear regulator (inline)
-  - Passives (R, C) from standard "Device" library
-  - A 3-pin connector from "Connector" library if available
+  - Passives (R, C) from KiCad footprints
+  - 3-pin connector references
 
-All pin 'func' assignments are omitted so it doesn't conflict with older SKiDL versions.
+We define `fp_libs` for generate_pcb() so it knows where each .pretty folder is located.
+We also set `fp_lib_dirs=[]` to avoid the "TypeError" in kinet2pcb.
 """
 
-from skidl import SKIDL, Pin, Part, Net, generate_netlist, generate_schematic, generate_pcb
+from skidl import SKIDL, Pin, Part, Net
+from skidl import generate_netlist, generate_schematic, generate_pcb
+
+# ------------------------------------------------------------------------------
+# Adjust these footprints to match what's inside your KiCad .pretty directories.
+# Example references:
+# - /Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/Resistor_SMD.pretty/R_0603.kicad_mod
+# - /Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/Connector.pretty/Conn_01x03.kicad_mod
+# ------------------------------------------------------------------------------
+
+ESP32_FOOTPRINT       = "Module:ESP32-WROOM-32"    # If you have a custom or official footprint
+HX711_FOOTPRINT       = "Package_SOIC:SOIC-16_3.9x9.9mm_P1.27mm"
+REGULATOR_FOOTPRINT   = "Package_TO_SOT_SMD:SOT-223"
+BARREL_JACK_FOOTPRINT = "Connector_BarrelJack:BarrelJack"  # If that matches your .kicad_mod
+CONNECT_3P_FOOTPRINT  = "Connector:Conn_01x03"     # e.g., in Connector.pretty
+RES_0603              = "Resistor_SMD:R_0603"
+CAP_0603              = "Capacitor_SMD:C_0603"
 
 NUM_SENSORS = 4
 SENSOR_BRIDGE_RES_VAL = "1k"
 
-#
-# Footprint references (edit to match your KiCad library footprints)
-#
-ESP32_FOOTPRINT       = "Module:ESP32-WROOM-32"
-HX711_FOOTPRINT       = "Package_SOIC:SOIC-16_3.9x9.9mm_P1.27mm"
-REGULATOR_FOOTPRINT   = "Package_TO_SOT_SMD:SOT-223"
-BARREL_JACK_FOOTPRINT = "Connector:Barrel_Jack"
-CONNECT_3P_FOOTPRINT  = "Connector:Conn_01x03"
-RES_0603              = "Resistor_SMD:R_0603"
-CAP_0603              = "Capacitor_SMD:C_0603"
+# ------------------------------------------------------------------------------
+# Dictionary: library_name -> path/to/.pretty
+# ------------------------------------------------------------------------------
+fp_libs = {
+    "Resistor_SMD":  "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/Resistor_SMD.pretty",
+    "Capacitor_SMD": "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/Capacitor_SMD.pretty",
+    "Connector":     "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/Connector.pretty",
+    "Connector_BarrelJack": "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/Connector_BarrelJack.pretty",
+    "Package_SOIC": "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/Package_SO.pretty",
+    "Package_TO_SOT_SMD": "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/Package_TO_SOT_SMD.pretty",
+    # "Module":      "/some/path/Module.pretty"  # If you have an ESP32 footprint
+}
 
-#
-# Define nets
-#
+# ------------------------------------------------------------------------------
+# Main nets
+# ------------------------------------------------------------------------------
 net_5v  = Net("5V")
 net_3v3 = Net("3V3")
 net_gnd = Net("GND")
@@ -70,7 +89,7 @@ net_3v3 += reg_3v3["VOUT"]
 net_gnd += reg_3v3["GND"]
 
 #
-# Decoupling caps from Device library
+# Decoupling caps
 #
 c_in = Part("Device", "C", ref="C1", value="10uF", footprint=CAP_0603)
 c_out = Part("Device", "C", ref="C2", value="10uF", footprint=CAP_0603)
@@ -142,7 +161,7 @@ for i in range(NUM_SENSORS):
     )
     hx711_list.append(amp)
 
-    # Tie power
+    # Power pins
     net_3v3 += amp["VDD"], amp["DVDD"], amp["VCC"], amp["AVDD"]
     net_gnd += amp["DGND"], amp["AGND"]
 
@@ -193,14 +212,24 @@ for i in range(NUM_SENSORS):
     hx["BP"] += sig_net
     hx["BM"] += mid_net
 
-    # E+ = 3.3V, E- = GND
+    # E+ -> 3.3 V, E- -> GND
     net_3v3 += eplus_net
     net_gnd += eminus_net
 
-#
-# Generate netlist
-#
+# ------------------------------------------------------------------------------
+# Generate outputs
+# ------------------------------------------------------------------------------
 if __name__ == "__main__":
+    # Generate netlist
     generate_netlist(file_="climbing_hold_sensors.net")
+
+    # Attempt schematic (currently not implemented for KiCad v8 in SKiDL)
     generate_schematic(file_="climbing_hold_sensors.kicad_sch")
-    generate_pcb(file_="climbing_hold_sensors.kicad_pcb")
+
+    # Generate .kicad_pcb with the library map, but set fp_lib_dirs=[]
+    # to avoid TypeError in kinet2pcb.
+    generate_pcb(
+        file_="climbing_hold_sensors.kicad_pcb",
+        fp_libs=fp_libs,
+        fp_lib_dirs=[]
+    )

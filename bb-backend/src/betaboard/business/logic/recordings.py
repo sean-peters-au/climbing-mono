@@ -56,6 +56,9 @@ def stop_recording(recording_id: str) -> recordings_model.RecordingModel:
     Raises:
         ValueError: If recording not found or services fail.
     """
+    # Generate simulated sensor data
+    end_time = datetime.datetime.now(datetime.timezone.utc)
+
     # Get the current recording
     recording = recording_dao.RecordingDAO.get_recording_by_id(recording_id)
     
@@ -75,8 +78,6 @@ def stop_recording(recording_id: str) -> recordings_model.RecordingModel:
         route_model = route_dao.RouteDAO.get_route_by_id(recording.route_id)
         hold_ids = [hold.id for hold in route_model.holds]
 
-        # Generate simulated sensor data
-        end_time = datetime.datetime.utcnow()
         sensor_reading_frames = _simulate_recording(recording.start_time, end_time, hold_ids)
 
         # Transform sensor readings to SensorReadingModel instances

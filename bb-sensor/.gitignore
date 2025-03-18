@@ -1,0 +1,21 @@
+# KiCad generated files
+hw/**/*.log
+hw/**/*.erc
+hw/**/*.net
+hw/**/*.kicad_prl
+hw/**/*.kicad_pcb-bak
+hw/**/*-bak
+hw/**/*-backups/
+hw/**/*_lib_sklib.py
+hw/**/*.pro.user
+hw/**/fp-info-cache
+
+# KiCad temporary and backup files
+hw/**/\#auto_saved_files\#
+
+# Pickle files
+hw/**/lib_pickle_dir/
+
+# OS specific files
+.DS_Store
+**/.DS_Store
