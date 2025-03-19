@@ -18,22 +18,17 @@ def main():
     
     # Setup state change callback
     def on_state_changed(old_state, new_state):
-        pass
-        # print(f"State changed: status={new_state['status']}, active_cell={new_state['active_cell']}")
+        # Only print important state changes
+        if old_state['status'] != new_state['status'] or old_state['active_cell'] != new_state['active_cell']:
+            print(f"State changed: status={new_state['status']}, active_cell={new_state['active_cell']}")
     
     # Setup error callback
     def on_error(error_message):
         print(f"Error: {error_message}")
     
-    # Setup health change callback
-    def on_health_changed(health):
-        print(f"Connection health: connected={health['is_connected']}, healthy={health['is_healthy']}, "
-              f"success_rate={health['success_rate']:.2f}, latency={health['avg_latency']:.1f}ms")
-    
     # Register callbacks
     arduino.on_state_changed = on_state_changed
     arduino.on_error = on_error
-    arduino.on_health_changed = on_health_changed
     
     # Start the client
     if not arduino.start():
@@ -73,24 +68,14 @@ def main():
     # Create GUI
     gui = LoadCellGUI(4, zero_cell, zero_all_cells, calibrate_cell)
     
-    # Add connection health status to window title
-    def update_window_title():
-        health = arduino.get_connection_health()
-        status = "Connected" if health['is_connected'] else "Disconnected"
-        health_status = "Healthy" if health['is_healthy'] else "Unhealthy"
-        success_rate = health['success_rate'] * 100
-        latency = health['avg_latency']
-        
-        title = f"Load Cell Monitor - {status}, {health_status}, Success: {success_rate:.1f}%, Latency: {latency:.1f}ms"
-        gui.setWindowTitle(title)
-    
     # Update GUI with latest data periodically
     def update_gui():
         # Get current state
         state = arduino.get_state()
+        health = arduino.get_connection_health()
         
-        # Update window title with connection health
-        update_window_title()
+        # Update connection health bar
+        gui.update_connection_health(health)
         
         # Update each cell's status and reading
         for i in range(4):

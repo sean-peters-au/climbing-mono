@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QPushButton, 
                             QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, 
-                            QInputDialog, QMessageBox, QGroupBox, QFrame)
+                            QInputDialog, QMessageBox, QGroupBox, QFrame,
+                            QProgressBar, QStatusBar)
 from PyQt5.QtGui import QPainter, QColor, QPen, QFont
 from PyQt5.QtCore import Qt, QSize
 
@@ -8,6 +9,86 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import time
+
+class ConnectionHealthBar(QWidget):
+    """Widget for displaying connection health metrics."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        # Create layout
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Status label
+        self.status_label = QLabel("Connection:")
+        layout.addWidget(self.status_label)
+        
+        # Health bar
+        self.health_bar = QProgressBar()
+        self.health_bar.setRange(0, 100)
+        self.health_bar.setValue(100)
+        self.health_bar.setFixedWidth(150)
+        layout.addWidget(self.health_bar)
+        
+        # Success rate
+        self.success_label = QLabel("Success: 100.0%")
+        layout.addWidget(self.success_label)
+        
+        # Latency
+        self.latency_label = QLabel("Latency: 0.0ms")
+        layout.addWidget(self.latency_label)
+        
+        # Extra info (errors, etc.)
+        self.info_label = QLabel("")
+        layout.addWidget(self.info_label)
+        
+        # Add spacer
+        layout.addStretch(1)
+        
+        self.setLayout(layout)
+    
+    def update_health(self, health_data):
+        """Update the health bar with new health metrics."""
+        
+        # Update connection status
+        if health_data['is_connected']:
+            if health_data['is_healthy']:
+                status_text = "Connected"
+                color = "green"
+            else:
+                status_text = "Unhealthy"
+                color = "orange"
+        else:
+            status_text = "Disconnected"
+            color = "red"
+        
+        self.status_label.setText(f"Connection: {status_text}")
+        self.status_label.setStyleSheet(f"color: {color}; font-weight: bold;")
+        
+        # Update health bar
+        success_rate = health_data['success_rate'] * 100
+        self.health_bar.setValue(int(success_rate))
+        
+        # Set color based on health
+        if success_rate > 90:
+            self.health_bar.setStyleSheet("QProgressBar::chunk { background-color: green; }")
+        elif success_rate > 70:
+            self.health_bar.setStyleSheet("QProgressBar::chunk { background-color: orange; }")
+        else:
+            self.health_bar.setStyleSheet("QProgressBar::chunk { background-color: red; }")
+        
+        # Update success and latency labels
+        self.success_label.setText(f"Success: {success_rate:.1f}%")
+        self.latency_label.setText(f"Latency: {health_data['avg_latency']:.1f}ms")
+        
+        # Update info label with errors if any
+        if health_data['consecutive_failures'] > 0:
+            self.info_label.setText(f"Failures: {health_data['consecutive_failures']}")
+            self.info_label.setStyleSheet("color: red;")
+        else:
+            self.info_label.setText("")
+
 
 class CellStatusWidget(QFrame):
     """Widget to display a single load cell's status and controls."""
@@ -279,9 +360,16 @@ class LoadCellGUI(QMainWindow):
         
         main_layout.addLayout(control_layout)
         
+        # Connection health bar
+        self.connection_health = ConnectionHealthBar()
+        main_layout.addWidget(self.connection_health)
+        
         # Set the main layout
         main_widget.setLayout(main_layout)
         self.setCentralWidget(main_widget)
+        
+        # Create status bar for additional information
+        self.statusBar().showMessage("Ready")
     
     def update_cell(self, cell_id, value, configured, active, faulty):
         """Update the status and reading for a specific cell."""
@@ -292,6 +380,14 @@ class LoadCellGUI(QMainWindow):
             # Update the visualizer
             self.visualizer.update_cell(cell_id, value, configured, active, faulty)
     
+    def update_connection_health(self, health_data):
+        """Update the connection health bar with new health data."""
+        self.connection_health.update_health(health_data)
+        
+        # Update status bar with last error if any
+        if 'last_error_message' in health_data and health_data['last_error_message']:
+            self.statusBar().showMessage(f"Last error: {health_data['last_error_message']}")
+    
     def show_message(self, title, message):
         """Show a message dialog."""
         QMessageBox.information(self, title, message)
@@ -300,6 +396,7 @@ class LoadCellGUI(QMainWindow):
 if __name__ == "__main__":
     import sys
     import time
+    from PyQt5.QtCore import QTimer
     
     app = QApplication(sys.argv)
     
@@ -323,6 +420,18 @@ if __name__ == "__main__":
             active = i == int(time.time()) % 4  # Activate cells in sequence
             faulty = i == 3  # Last cell is faulty
             gui.update_cell(i, value, configured, active, faulty)
+        
+        # Simulate connection health changes
+        tick = int(time.time()) % 30
+        health_data = {
+            'is_connected': True,
+            'is_healthy': tick < 25,
+            'success_rate': max(0.5, 1.0 - (tick % 10) / 10),
+            'avg_latency': 10 + tick * 2,
+            'consecutive_failures': max(0, tick - 25),
+            'last_error_message': "Simulated error" if tick > 25 else ""
+        }
+        gui.update_connection_health(health_data)
         
         QTimer.singleShot(100, update_test)
     
