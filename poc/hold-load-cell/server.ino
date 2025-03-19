@@ -26,6 +26,9 @@
 
 // Communication protocol structs (must match Python side)
 struct CommandStruct {
+  // Sequence ID for tracking requests
+  uint8_t seq_id;
+  
   // Command flags (bitfield)
   uint8_t command_flags;
   
@@ -40,10 +43,13 @@ struct CommandStruct {
   float calibration_mass;
   
   // Reserved for future use
-  uint8_t reserved[4];
+  uint8_t reserved[2]; // Reduced from 4 to 2 bytes to maintain struct size
 };
 
 struct ResponseStruct {
+  // Sequence ID matching the request
+  uint8_t seq_id;
+  
   // Global status
   uint8_t status;
   
@@ -121,6 +127,9 @@ void loop() {
 
 // Process a command struct
 void processCommand(CommandStruct& cmd) {
+  // Store sequence ID for response
+  responseData.seq_id = cmd.seq_id;
+  
   // Reset error
   lastError = ERR_NONE;
   responseData.error = ERR_NONE;

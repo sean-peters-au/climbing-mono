@@ -1,21 +1,42 @@
+"""Main application for the load cell monitoring system."""
+
+import sys
+import time
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
+
+from client import ArduinoClient
 from gui import LoadCellGUI
-import time
-import threading
-import sys
-from arduino_protocol import ArduinoProtocol
 
 
 def main():
     """Main application entry point."""
     app = QApplication([])
     
-    # Create Arduino protocol handler
-    arduino = ArduinoProtocol('/dev/cu.usbmodem101', 115200)
+    # Create Arduino client
+    arduino = ArduinoClient('/dev/cu.usbmodem101', 115200)
     
-    # Connect to Arduino
-    if not arduino.connect():
+    # Setup state change callback
+    def on_state_changed(old_state, new_state):
+        pass
+        # print(f"State changed: status={new_state['status']}, active_cell={new_state['active_cell']}")
+    
+    # Setup error callback
+    def on_error(error_message):
+        print(f"Error: {error_message}")
+    
+    # Setup health change callback
+    def on_health_changed(health):
+        print(f"Connection health: connected={health['is_connected']}, healthy={health['is_healthy']}, "
+              f"success_rate={health['success_rate']:.2f}, latency={health['avg_latency']:.1f}ms")
+    
+    # Register callbacks
+    arduino.on_state_changed = on_state_changed
+    arduino.on_error = on_error
+    arduino.on_health_changed = on_health_changed
+    
+    # Start the client
+    if not arduino.start():
         print("Failed to connect to Arduino. Please check the connection and try again.")
         sys.exit(1)
     
@@ -29,12 +50,12 @@ def main():
     
     # Configure all load cells
     for cell_id, dout, sck in cell_configs:
-        arduino.configure_cell(cell_id, dout, sck)
         print(f"Configuring load cell {cell_id} with DOUT={dout}, SCK={sck}")
-        time.sleep(0.5)  # Give time for configuration to complete
+        arduino.configure_cell(cell_id, dout, sck)
     
     # Wait for all configurations to complete
-    arduino.wait_for_idle()
+    if not arduino.wait_for_idle(timeout=10.0):
+        print("Warning: Timed out waiting for Arduino to become idle")
     
     # Setup callbacks for GUI
     def zero_cell(cell_id):
@@ -49,18 +70,32 @@ def main():
         print(f"Calibrating load cell {cell_id} with mass {known_mass}g")
         arduino.calibrate_cell(cell_id, known_mass)
     
-    # Create GUI with per-cell operations
-    gui = LoadCellGUI(arduino.MAX_LOAD_CELLS, zero_cell, zero_all_cells, calibrate_cell)
-    gui.show()
+    # Create GUI
+    gui = LoadCellGUI(4, zero_cell, zero_all_cells, calibrate_cell)
+    
+    # Add connection health status to window title
+    def update_window_title():
+        health = arduino.get_connection_health()
+        status = "Connected" if health['is_connected'] else "Disconnected"
+        health_status = "Healthy" if health['is_healthy'] else "Unhealthy"
+        success_rate = health['success_rate'] * 100
+        latency = health['avg_latency']
+        
+        title = f"Load Cell Monitor - {status}, {health_status}, Success: {success_rate:.1f}%, Latency: {latency:.1f}ms"
+        gui.setWindowTitle(title)
     
     # Update GUI with latest data periodically
     def update_gui():
+        # Get current state
         state = arduino.get_state()
         
+        # Update window title with connection health
+        update_window_title()
+        
         # Update each cell's status and reading
-        for i in range(arduino.MAX_LOAD_CELLS):
+        for i in range(4):
             is_configured = state['cell_configured'][i]
-            is_active = (state['active_cell'] == i and state['status'] != arduino.STATUS_IDLE)
+            is_active = (state['active_cell'] == i and state['status'] != 0)  # Not IDLE
             is_faulty = False  # We could add fault detection in the future
             
             reading = state['cell_readings'][i]
@@ -71,14 +106,17 @@ def main():
         # Schedule the next update
         QTimer.singleShot(10, update_gui)  # 10ms = 100Hz update rate
     
+    # Show the GUI
+    gui.show()
+    
     # Start the GUI update loop
     QTimer.singleShot(10, update_gui)
     
     # Run the application
     result = app.exec_()
     
-    # Clean up when done
-    arduino.disconnect()
+    # Clean up
+    arduino.stop()
     
     sys.exit(result)
 
