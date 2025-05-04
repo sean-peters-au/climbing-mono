@@ -1,11 +1,14 @@
 <img src="logo.png" align="left" width="192px" height="192px"/>
 <img align="left" width="0" height="192px" hspace="10"/>
 
-betaboard is an over-engineered, over-the-top climbing board app.
+Betaboard is an over-engineered, over-the-top climbing board app. It is very in progress.
 
 [![Under Development](https://img.shields.io/badge/under-development-orange.svg)](https://github.com/cez-aug/github-project-boilerplate) 
 
-TODO Blurb
+The goal is to
+- Track 3 axes forces applied over climbing holds, and skeletal kinematics of the climber
+- 3D visualisation of the forces and climber on the board
+- Biomechanics approximations from this time-series data
 
 <br>
 <br>
@@ -13,63 +16,28 @@ TODO Blurb
 
 ## Installing
 
-> **[?]** So, how users can get this project up and running on their machines?
-
-```sh
-# Describe it in a nice way. Code samples with installation basics works great
-$ npm install --global ghdocs
-$ ghdocs
-```
+TODO
 
 # Getting Started
 
-> **[?]** What does this project stands for?
+TODO
 
 ## Usage
 
-> **[?]** Tell contributors how to use it.
+TODO
 
 ## Contributing
 
-> **[?]** Write some Contributing guidelines or a Contributors list (or both!). Like:
+TODO
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+## Changelog
 
-> or if you like it simple:
+TODO
 
-1. `Fork` this repository
-2. Create a `branch`
-3. `Commit` your changes
-4. `Push` your `commits` to the `branch`
-5. Submit a `pull request`
+## Acknowledgments
 
-> You can find more information about Pull Requests [here](https://help.github.com/categories/collaborating-on-projects-using-pull-requests/)
-
-Check also the [list of contributors](CONTRIBUTORS.md) who helped on this project.
-
-## Changelog :memo:
-
-> **[?]** Write here a link for your `CHANGELOG` file. It's also commonly called `HISTORY`.
-
-## Acknowledgments :thumbsup:
-
-> **[?]** Reference someone's code you used, insert an external link or thank people, i.e.:
-
-* [Shields.io](http://shields.io/). Definitely a must-have.
-* [Travis-CI](travis-ci.org). Another must-have. _Test and Deploy with Confidence_.
-
-## To-Do :man:
-
-> **[?]** If your project is still in an early release, a to-do list is a good thing to keep track:
-
-- [x] Include something
-- [ ] Another something
-- [ ] So on...
+TODO
 
 ## License
 
-> **[?]** Include a refence for the license you choosed. For this project my take was the **Public License**. More licenses [here](http://creativecommons.org).
-
-[![CC0](https://i.creativecommons.org/p/zero/1.0/88x31.png)](https://creativecommons.org/publicdomain/zero/1.0/)
-
-To the extent possible under law, [YOUR_NAME_HERE](mailto:YOUR_EMAIL_HERE) has waived all copyright and related or neighboring rights to this work.
+TODO
